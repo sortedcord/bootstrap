@@ -1,5 +1,25 @@
 #!/usr/bin/env bash
+
+# Run metascript to check if the shell is bash
+PARENT_DIR="$(dirname "$0")/.."
+METASCRIPT_LOCAL="$PARENT_DIR/bootstrap.sh"
+METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
+
+if [ -f "$METASCRIPT_LOCAL" ]; then
+    . "$METASCRIPT_LOCAL"
+else
+    if command -v wget >/dev/null 2>&1; then
+        eval "$(wget -qO- "$METASCRIPT_URL")"
+    elif command -v curl >/dev/null 2>&1; then
+        eval "$(curl -fsSL "$METASCRIPT_URL")"
+    else
+        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        exit 1
+    fi
+fi
+
 set -euo pipefail
+
 
 NVIM_VERSION="0.11.7"
 NVIM_URL="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
@@ -48,20 +68,26 @@ check_config_dir() {
 }
 
 install_packages() {
-    echo "Detecting distribution..."
+    echo "Detecting distribution and installing dependencies..."
 
     if command -v pacman >/dev/null 2>&1; then
         echo "Arch Linux detected"
-        sudo pacman -Sy --needed git wget tar
+        sudo pacman -Sy --needed git wget tar curl unzip ripgrep fd cmake make gcc python nodejs npm xclip wl-clipboard fzf
 
     elif command -v apt >/dev/null 2>&1; then
         echo "Debian/Ubuntu detected"
         sudo apt update
-        sudo apt install -y git wget tar
+        sudo apt install -y git wget tar curl unzip ripgrep fd-find cmake build-essential python3 python3-pip python3-venv nodejs npm xclip wl-clipboard fzf
+        
+        # Create a symlink for fd-find if it doesn't already exist as fd
+        if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
+            echo "Creating symlink for fd..."
+            sudo ln -sf "$(command -v fdfind)" /usr/local/bin/fd
+        fi
 
     elif command -v dnf >/dev/null 2>&1; then
         echo "Fedora detected"
-        sudo dnf install -y git wget tar
+        sudo dnf install -y git wget tar curl unzip ripgrep fd-find cmake make gcc gcc-c++ python3 python3-pip nodejs npm xclip wl-clipboard fzf
 
     else
         echo "Unsupported distribution."
