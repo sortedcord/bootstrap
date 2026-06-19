@@ -38,4 +38,62 @@ b() {
     # Execute the routes file
     bash "$routes_file" "$@"
 }
+
+# Autocompletion for the b command in Bash
+_b_completion() {
+    local cur prev opts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    # If completing the first argument after 'b'
+    if [ "$COMP_CWORD" -eq 1 ]; then
+        opts="all conf bye"
+        
+        local routes_file="$HOME/.config/bootstrap/routes.sh"
+        if [ -f "$routes_file" ]; then
+            # Extract installer keys dynamically from the routes.sh file
+            local installer_keys
+            installer_keys=$(grep -E "^INSTALLER_KEYS=" "$routes_file" 2>/dev/null | sed -E 's/INSTALLER_KEYS=\(([^)]+)\)/\1/' 2>/dev/null)
+            if [ -n "$installer_keys" ]; then
+                opts="$opts $installer_keys"
+            fi
+        fi
+
+        # Support comma-separated completions (e.g. b nvim,ya<TAB>)
+        if [[ "$cur" == *,* ]]; then
+            local prefix="${cur%,*}"
+            local last="${cur##*,}"
+            local matches
+            matches=$(compgen -W "$opts" -- "$last")
+            if [ -n "$matches" ]; then
+                COMPREPLY=()
+                for m in $matches; do
+                    # Do not offer the command if it's already in the comma-separated list
+                    if [[ ",$prefix," != *",$m,"* ]]; then
+                        COMPREPLY+=("${prefix},${m}")
+                    fi
+                done
+            fi
+            return 0
+        fi
+
+        COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+        return 0
+    fi
+
+    # If completing arguments for 'b conf <config_dir>'
+    if [ "$COMP_CWORD" -eq 2 ] && [ "$prev" = "conf" ]; then
+        # List of directories in ~/.config/ to choose from
+        local config_dirs
+        config_dirs=$(find "$HOME/.config" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null)
+        COMPREPLY=( $(compgen -W "$config_dirs" -- "$cur") )
+        return 0
+    fi
+}
+
+# Register completion for b command
+if [ -n "${BASH_VERSION:-}" ]; then
+    complete -F _b_completion b
+fi
 # <<< bootstrap-cli b function <<<

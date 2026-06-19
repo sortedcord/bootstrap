@@ -125,6 +125,10 @@ export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
 # <<< bootstrap-cli setup <<<
 EOF
     done
+
+    # Initialize the last update timestamp to prevent immediate update on first execution (Fix 2)
+    local last_update_file="$routes_dir/.last_b_update"
+    date +%s 2>/dev/null > "$last_update_file" || date +%s > "$last_update_file"
 }
 
 # Only execute installation if not sourced (Fix 3)
@@ -136,9 +140,20 @@ if [ "$is_sourced" = false ]; then
         . "$HOME/.config/bootstrap/b.sh"
     fi
 
-    # Handle sourcing the shell configuration file
-    if [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ]; then
-        log_info "Sourcing ~/.bashrc..."
-        . "$HOME/.bashrc"
+    # Handle sourcing the shell configuration file or printing instructions (Fix 1)
+    echo
+    log_success "Bootstrap CLI installed successfully!"
+    log_info "To start using the 'b' command in this terminal session, run:"
+    if [ -f "$HOME/.zshrc" ]; then
+        echo "  source ~/.zshrc"
+    else
+        echo "  source ~/.bashrc"
+    fi
+else
+    # Sourced mode (e.g., when sourced by installers or manually by user)
+    # Load the b function in the current shell context
+    if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        . "$HOME/.config/bootstrap/b.sh"
     fi
 fi
+
