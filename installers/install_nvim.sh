@@ -1,133 +1,119 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
 NVIM_VERSION="0.11.7"
 NVIM_URL="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
-CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
+NVIM_INSTALL_DIR="/opt/nvim"
 
 TMP_DIR="$(mktemp -d)"
 
 cleanup() {
-rm -rf "$TMP_DIR"
+    rm -rf "$TMP_DIR"
 }
-
 trap cleanup EXIT
 
-prompt_yes_no() {
-local prompt="$1"
-local response
+confirm() {
+    local prompt="$1"
+    local response
 
-```
-read -r -p "$prompt [y/N]: " response < /dev/tty || true
+    read -r -p "$prompt [y/N]: " response </dev/tty || true
 
-[[ "$response" =~ ^[Yy]$ ]]
-```
-
+    [[ "$response" =~ ^[Yy]$ ]]
 }
 
 install_packages() {
-echo "Detecting distribution..."
+    echo "Detecting distribution..."
 
-```
-if command -v pacman >/dev/null 2>&1; then
-    echo "Arch Linux detected"
-    sudo pacman -Sy --needed git curl tar
+    if command -v pacman >/dev/null 2>&1; then
+        echo "Arch Linux detected"
+        sudo pacman -Sy --needed git wget tar
 
-elif command -v apt >/dev/null 2>&1; then
-    echo "Debian/Ubuntu detected"
-    sudo apt update
-    sudo apt install -y git curl tar
+    elif command -v apt >/dev/null 2>&1; then
+        echo "Debian/Ubuntu detected"
+        sudo apt update
+        sudo apt install -y git wget tar
 
-elif command -v dnf >/dev/null 2>&1; then
-    echo "Fedora detected"
-    sudo dnf install -y git curl tar
+    elif command -v dnf >/dev/null 2>&1; then
+        echo "Fedora detected"
+        sudo dnf install -y git wget tar
 
-else
-    echo "Unsupported distribution."
-    exit 1
-fi
-```
-
+    else
+        echo "Unsupported distribution."
+        exit 1
+    fi
 }
 
 install_nvim() {
-local current_version=""
+    local current_version=""
 
-```
-if command -v nvim >/dev/null 2>&1; then
-    current_version="$(nvim --version | head -n1 | awk '{print $2}')"
+    if command -v nvim >/dev/null 2>&1; then
+        current_version="$(nvim --version | head -n1 | awk '{print $2}')"
 
-    if [[ "$current_version" == "v${NVIM_VERSION}" ]]; then
-        echo "Neovim ${current_version} already installed."
-        return
+        if [[ "$current_version" == "v${NVIM_VERSION}" ]] || [[ "$current_version" == "${NVIM_VERSION}" ]]; then
+            echo "Neovim ${current_version} already installed."
+            return
+        fi
+
+        echo "Detected Neovim ${current_version}"
+
+        if ! confirm "Upgrade to Neovim v${NVIM_VERSION}?"; then
+            echo "Skipping Neovim upgrade."
+            return
+        fi
+    else
+        echo "Neovim not installed."
+
+        if ! confirm "Install Neovim v${NVIM_VERSION}?"; then
+            echo "Skipping Neovim installation."
+            return
+        fi
     fi
 
-    echo "Current Neovim version: ${current_version}"
+    echo "Downloading Neovim v${NVIM_VERSION}..."
 
-    if ! prompt_yes_no "Upgrade to Neovim v${NVIM_VERSION}?"; then
-        echo "Skipping Neovim upgrade."
-        return
-    fi
-else
-    if ! prompt_yes_no "Install Neovim v${NVIM_VERSION}?"; then
-        echo "Skipping Neovim installation."
-        return
-    fi
-fi
+    wget -qO "$TMP_DIR/nvim.tar.gz" "$NVIM_URL"
 
-echo "Downloading Neovim..."
+    tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 
-curl -L "$NVIM_URL" -o "$TMP_DIR/nvim.tar.gz"
+    sudo rm -rf "$NVIM_INSTALL_DIR"
+    sudo mv "$TMP_DIR/nvim-linux-x86_64" "$NVIM_INSTALL_DIR"
 
-tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
+    sudo ln -sf "$NVIM_INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
 
-sudo rm -rf /opt/nvim
-sudo mv "$TMP_DIR/nvim-linux-x86_64" /opt/nvim
-
-sudo ln -sf /opt/nvim/bin/nvim /usr/local/bin/nvim
-
-echo "Installed:"
-nvim --version | head -n1
-```
-
+    echo "Installed:"
+    nvim --version | head -n1
 }
 
 install_config() {
-local config_dir="$HOME/.config/nvim"
+    local config_dir="$HOME/.config/nvim"
 
-```
-mkdir -p "$HOME/.config"
+    if [[ -d "$config_dir" ]]; then
+        if ! confirm "~/.config/nvim already exists. Replace it?"; then
+            echo "Skipping config installation."
+            return
+        fi
 
-if [[ -d "$config_dir" ]]; then
-    local backup="${config_dir}.bak.$(date +%s)"
+        rm -rf "$config_dir"
+    fi
 
-    echo "Existing config found."
-    echo "Backing up to: $backup"
+    mkdir -p "$HOME/.config"
 
-    mv "$config_dir" "$backup"
-fi
+    echo "Cloning configuration..."
 
-git clone "$CONFIG_REPO" "$config_dir"
+    git clone \
+        https://git.adityagupta.dev/sortedcord/editor.git \
+        "$config_dir"
 
-echo "Neovim configuration installed."
-```
-
+    echo "Configuration installed."
 }
 
 main() {
-echo "=== SortedCord Neovim Bootstrap ==="
-echo
+    install_packages
+    install_nvim
+    install_config
 
-```
-install_packages
-install_nvim
-install_config
-
-echo
-echo "Bootstrap complete."
-```
-
+    echo
+    echo "Installation complete."
 }
 
 main "$@"
