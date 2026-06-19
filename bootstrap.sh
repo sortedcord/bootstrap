@@ -36,9 +36,26 @@ b() {
         echo "Usage: b <script_name> [args...]" >&2
         return 1
     fi
-    local script_name="$1"
-    shift
-    curl -fsSL "https://adityagupta.dev/b/${script_name}" | bash -s -- "$@"
+
+    local routes_dir="$HOME/.config/bootstrap"
+    local routes_file="$routes_dir/routes.sh"
+    local routes_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/routes.sh"
+
+    mkdir -p "$routes_dir"
+
+    # Attempt to update the routes.sh file
+    if command -v curl >/dev/null 2>&1; then
+        curl -fsSL "$routes_url" -o "$routes_file" 2>/dev/null
+    elif command -v wget >/dev/null 2>&1; then
+        wget -qO "$routes_file" "$routes_url" 2>/dev/null
+    fi
+
+    if [ ! -f "$routes_file" ]; then
+        echo "Error: Routes file not found at $routes_file and could not be downloaded." >&2
+        return 1
+    fi
+
+    bash "$routes_file" "$@"
 }
 # <<< bootstrap-cli b function <<<
 EOF

@@ -9,23 +9,23 @@ The goal is simple: reduce the number of manual steps required after installing 
 | Script            | Description                                                           |
 | ----------------- | --------------------------------------------------------------------- |
 | `install_nvim.sh` | Installs Neovim 0.11.7 and clones my Neovim configuration repository. |
+| `install_yazi.sh` | Installs Yazi terminal file manager and its dependencies.             |
 
 More scripts will be added over time.
 
 ## Usage
 
-You can either download and inspect a script before running it:
+To bootstrap a new machine and set up the `b` command tool, run the following:
 
 ```bash
-curl -fsSL https://adityagupta.dev/b/nvim -o install_nvim.sh
-less install_nvim.sh
-bash install_nvim.sh
+curl -fsSL https://adityagupta.dev/b | bash
 ```
 
-Or run it directly:
+Once bootstrapped, you can run any installer script using the `b` command followed by its shortcut name:
 
 ```bash
-curl -fsSL https://adityagupta.dev/b/nvim | bash
+b nvim
+b yazi
 ```
 
 ## What the Neovim Installer Does
@@ -39,6 +39,19 @@ The Neovim bootstrap script:
 5. Installs the official Neovim binary to `/opt/nvim`.
 6. Creates a symlink at `/usr/local/bin/nvim`.
 7. Clones my Neovim configuration into `~/.config/nvim`.
+
+## What the Yazi Installer Does
+
+The Yazi bootstrap script:
+
+1. Detects the Linux distribution.
+2. Prompts before installing or upgrading Yazi.
+3. Installs Yazi:
+   * **Arch Linux**: Installs `yazi` via pacman.
+   * **Debian / Ubuntu**: Downloads the latest `.deb` release package from GitHub and installs it.
+   * **Fedora**: Enables the COPR repository (`lihaohong/yazi`) and installs `yazi` (initially skipping weak dependencies).
+4. Subsequently installs the dependencies (`ffmpeg`, `7zip` / `p7zip-full`, `jq`, `poppler`, `fd` / `fd-find`, `ripgrep`, `fzf`, `zoxide`, `resvg`, `imagemagick`) to make Yazi available quicker.
+5. Configures a shell wrapper function `y` in `~/.bashrc` and `~/.zshrc` that allows changing directory on exit.
 
 Supported distributions:
 
@@ -62,16 +75,18 @@ The scripts are intentionally straightforward Bash scripts that can be inspected
 ## Repository Structure
 
 ```text
-installers/
-├── install_nvim.sh
-└── ...
+.
+├── bootstrap.sh
+├── routes.sh
+└── installers/
+    ├── install_nvim.sh
+    └── install_yazi.sh
 ```
 
 ## Future Plans
 
 Potential additions include:
 
-* Fish shell setup
 * Development environment bootstrap
 * Workstation setup
 * Server provisioning
@@ -86,7 +101,8 @@ Running scripts directly from the internet is convenient but should always be ap
 If you do not trust the source, inspect the script before executing it:
 
 ```bash
-curl -fsSL https://adityagupta.dev/b/nvim
+curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh
+curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/routes.sh
 ```
 
 and review the contents before piping it into a shell.
