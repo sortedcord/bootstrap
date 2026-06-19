@@ -15,7 +15,7 @@ if [ -n "${ZSH_VERSION:-}" ]; then
         *file*) is_sourced=true ;;
     esac
 elif [ -n "${BASH_VERSION:-}" ]; then
-    if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
         is_sourced=true
     fi
 fi
