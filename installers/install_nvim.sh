@@ -4,6 +4,8 @@ set -euo pipefail
 NVIM_VERSION="0.11.7"
 NVIM_URL="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
 NVIM_INSTALL_DIR="/opt/nvim"
+NVIM_CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
+NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
 TMP_DIR="$(mktemp -d)"
 
@@ -19,6 +21,30 @@ confirm() {
     read -r -p "$prompt [y/N]: " response </dev/tty || true
 
     [[ "$response" =~ ^[Yy]$ ]]
+}
+
+check_config_dir() {
+    if [[ -d "$NVIM_CONFIG_DIR" ]]; then
+        if confirm "$NVIM_CONFIG_DIR already exists. Replace it?"; then
+            echo "Existing configuration will be removed during setup."
+            rm -rf "$NVIM_CONFIG_DIR"
+        else
+            while true; do
+                read -r -p "Enter an alternative directory to clone the configuration into: " alt_dir </dev/tty || true
+                
+                # Expand tilde (~) to $HOME if the user uses it
+                alt_dir="${alt_dir/#\~/$HOME}"
+
+                if [[ -z "$alt_dir" ]]; then
+                    echo "Directory path cannot be empty. Please try again."
+                    continue
+                fi
+
+                NVIM_CONFIG_DIR="$alt_dir"
+                break
+            done
+        fi
+    fi
 }
 
 install_packages() {
@@ -85,29 +111,21 @@ install_nvim() {
 }
 
 install_config() {
-    local config_dir="$HOME/.config/nvim"
+    # Ensure parent directory for the chosen config path exists
+    mkdir -p "$(dirname "$NVIM_CONFIG_DIR")"
 
-    if [[ -d "$config_dir" ]]; then
-        if ! confirm "~/.config/nvim already exists. Replace it?"; then
-            echo "Skipping config installation."
-            return
-        fi
-
-        rm -rf "$config_dir"
+    # Quick check if the alternative folder exists and clear it out
+    if [[ -d "$NVIM_CONFIG_DIR" ]]; then
+        rm -rf "$NVIM_CONFIG_DIR"
     fi
 
-    mkdir -p "$HOME/.config"
-
-    echo "Cloning configuration..."
-
-    git clone \
-        https://git.adityagupta.dev/sortedcord/editor.git \
-        "$config_dir"
-
+    echo "Cloning configuration to $NVIM_CONFIG_DIR..."
+    git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG_DIR"
     echo "Configuration installed."
 }
 
 main() {
+    check_config_dir
     install_packages
     install_nvim
     install_config
