@@ -21,11 +21,12 @@ To bootstrap a new machine and set up the `b` command tool, run the following:
 curl -fsSL https://adityagupta.dev/b | bash
 ```
 
-Once bootstrapped, you can run any installer script using the `b` command followed by its shortcut name:
+Once bootstrapped, you can run any installer script using the `b` command followed by its shortcut name. You can also chain multiple installations by separating their names with a comma:
 
 ```bash
 b nvim
 b yazi
+b nvim,yazi
 ```
 
 ## What the Neovim Installer Does
