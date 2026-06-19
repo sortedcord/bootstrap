@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
-
 # Central routing script for bootstrap installers.
 # This file is updated automatically by the 'b' command.
 
-if [ -z "${BASH_VERSION:-}" ]; then
-    echo "Error: This script must be run using bash." >&2
+BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
+
+# Source common library
+if [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
+    . "$BOOTSTRAP_DIR/lib/common.sh"
+else
+    # Fallback/Bootstrap case if lib is not installed yet
+    echo "Error: Bootstrap libraries not found at $BOOTSTRAP_DIR/lib/" >&2
     exit 1
 fi
 
+require_bash
+
+# Registry of installers
 declare -A INSTALLERS=(
     [nvim]="Install Neovim 0.11.7 and configuration"
     [yazi]="Install Yazi terminal file manager and dependencies"
@@ -20,7 +28,11 @@ SCRIPT_NAMES="${1:-}"
 if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
     SCRIPT_NAMES="all"
 fi
-shift
+
+# Guard shift (Fix 1)
+if [ $# -gt 0 ]; then
+    shift
+fi
 
 # Split comma-separated script names
 IFS=',' read -ra SCRIPTS <<< "$SCRIPT_NAMES"
@@ -30,77 +42,53 @@ for script in "${SCRIPTS[@]}"; do
     if [[ -n "${INSTALLERS[$script]:-}" ]]; then
         # Capitalize first letter for display (e.g. nvim -> Neovim)
         display_name="$(echo "${script:0:1}" | tr '[:lower:]' '[:upper:]')${script:1}"
-        echo "Launching ${display_name} installer..."
-        curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
+        log_info "Launching ${display_name} installer..."
+        
+        # Check for local installer first, fallback to curl
+        local_installer="$BOOTSTRAP_DIR/installers/install_${script}.sh"
+        if [ -f "$local_installer" ]; then
+            bash "$local_installer" "$@"
+        else
+            if has_command curl; then
+                curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
+            elif has_command wget; then
+                wget -qO- "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
+            else
+                log_error "Neither curl nor wget is installed to download the installer."
+                exit 1
+            fi
+        fi
 
     else
         # Handle non-installer commands
         case "$script" in
             all)
-                echo "Available bootstrap commands:"
-                # Non-installers first (aligned to 6 chars width)
-                printf "  %-6s - %s\n" "all" "List all available commands"
-                printf "  %-6s - %s\n" "conf" "Edit config (e.g. b conf nvim)"
-                printf "  %-6s - %s\n" "bye" "Uninstall Bootstrap CLI helper"
-                # Installers second (iterating procedurally)
-                for key in "${INSTALLER_KEYS[@]}"; do
-                    printf "  %-6s - %s\n" "$key" "${INSTALLERS[$key]}"
-                done
-                ;;
-            conf)
-                config_name="${1:-}"
-                if [ -z "$config_name" ]; then
-                    echo "Usage: b conf <config_name> [files...]" >&2
+                if [ -f "$BOOTSTRAP_DIR/commands/help.sh" ]; then
+                    . "$BOOTSTRAP_DIR/commands/help.sh"
+                else
+                    log_error "Help command script not found."
                     exit 1
                 fi
-                shift
-
-                config_dir=""
-                if [ -d "$HOME/.config/$config_name" ]; then
-                    config_dir="$HOME/.config/$config_name"
+                ;;
+            conf)
+                if [ -f "$BOOTSTRAP_DIR/commands/conf.sh" ]; then
+                    . "$BOOTSTRAP_DIR/commands/conf.sh" "$@"
                 else
-                    config_dir=$(find "$HOME/.config" -mindepth 1 -maxdepth 1 -type d -iname "*$config_name*" 2>/dev/null | head -n1)
-                fi
-
-                if [ -n "$config_dir" ] && [ -d "$config_dir" ]; then
-                    cd "$config_dir"
-                    editor="${EDITOR:-nvim}"
-                    if [ $# -gt 0 ]; then
-                        $editor "$@"
-                    else
-                        $editor .
-                    fi
-                else
-                    echo "Could not find that directory" >&2
+                    log_error "Config editor command script not found."
                     exit 1
                 fi
                 ;;
             bye)
-                echo "Removing bootstrap CLI completely..."
-                
-                target_files=()
-                [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-                [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
-
-                for config_file in "${target_files[@]}"; do
-                    # Remove loader setup
-                    if grep -q "# >>> bootstrap-cli setup >>>" "$config_file" 2>/dev/null; then
-                        sed -i '/# >>> bootstrap-cli setup >>>/,/# <<< bootstrap-cli setup <<</d' "$config_file"
-                        echo "Removed bootstrap loader from $config_file"
-                    fi
-                    # Remove any old embedded 'b function' blocks if they exist
-                    if grep -q "# >>> bootstrap-cli b function >>>" "$config_file" 2>/dev/null; then
-                        sed -i '/# >>> bootstrap-cli b function >>>/,/# <<< bootstrap-cli b function <<</d' "$config_file"
-                        echo "Removed old bootstrap function from $config_file"
-                    fi
-                done
-
-                rm -rf "$HOME/.config/bootstrap"
-                echo "Bootstrap CLI removed successfully. (Note: Run 'unset -f b' to clear it from the current session)"
+                if [ -f "$BOOTSTRAP_DIR/commands/uninstall.sh" ]; then
+                    . "$BOOTSTRAP_DIR/commands/uninstall.sh"
+                else
+                    log_error "Uninstall command script not found."
+                    exit 1
+                fi
                 ;;
             *)
-                echo "Error: Unknown command '$script'." >&2
-                echo "Run 'b all' to list all available commands." >&2
+                log_error "Unknown command '$script'."
+                log_info "Run 'b all' to list all available commands."
                 exit 1
                 ;;
         esac

@@ -10,17 +10,52 @@ fi
 
 # Detect if the script is sourced
 is_sourced=false
-if [ -n "${ZSH_VERSION:-}" ]; then
-    case $ZSH_EVAL_CONTEXT in
-        *file*) is_sourced=true ;;
-    esac
-elif [ -n "${BASH_VERSION:-}" ]; then
-    if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
-        is_sourced=true
+if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    is_sourced=true
+fi
+
+# Locate or download libraries so that sourced installers can use them
+BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
+
+if [ -f "$_SCRIPT_DIR/lib/common.sh" ]; then
+    # Dev/local mode: source directly from repo
+    . "$_SCRIPT_DIR/lib/common.sh"
+    . "$_SCRIPT_DIR/lib/platform.sh"
+    . "$_SCRIPT_DIR/lib/shell_config.sh"
+elif [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
+    # Installed mode: source from bootstrap dir
+    . "$BOOTSTRAP_DIR/lib/common.sh"
+    . "$BOOTSTRAP_DIR/lib/platform.sh"
+    . "$BOOTSTRAP_DIR/lib/shell_config.sh"
+else
+    # Standalone/remote mode: download to a temp directory and source
+    export BOOTSTRAP_TMP_DIR
+    BOOTSTRAP_TMP_DIR="$(mktemp -d)"
+    trap 'rm -rf "$BOOTSTRAP_TMP_DIR"' EXIT
+    
+    _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
+    _LIBS=("lib/common.sh" "lib/platform.sh" "lib/shell_config.sh")
+    for _lib in "${_LIBS[@]}"; do
+        mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
+        if command -v curl >/dev/null 2>&1; then
+            curl -fsSL "$_BASE_URL/$_lib" -o "$BOOTSTRAP_TMP_DIR/$_lib" 2>/dev/null
+        elif command -v wget >/dev/null 2>&1; then
+            wget -qO "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib" 2>/dev/null
+        fi
+    done
+    
+    if [ -f "$BOOTSTRAP_TMP_DIR/lib/common.sh" ]; then
+        . "$BOOTSTRAP_TMP_DIR/lib/common.sh"
+        . "$BOOTSTRAP_TMP_DIR/lib/platform.sh"
+        . "$BOOTSTRAP_TMP_DIR/lib/shell_config.sh"
+    else
+        echo "Error: Failed to download bootstrap libraries." >&2
+        exit 1
     fi
 fi
 
-# Install/update the bootstrap loader and download b.sh & routes.sh
+# Install/update the bootstrap loader and download all necessary files
 install_bootstrap() {
     local target_files=()
     [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
@@ -29,45 +64,59 @@ install_bootstrap() {
     local routes_dir="$HOME/.config/bootstrap"
     mkdir -p "$routes_dir"
 
-    # Download b.sh and routes.sh from the repository, with fallback to local files if running inside the repo
-    echo "Downloading bootstrap scripts..."
-    local b_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/b.sh"
-    local routes_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/routes.sh"
+    # List of all files to download/copy
+    local files=(
+        "b.sh"
+        "routes.sh"
+        "lib/common.sh"
+        "lib/platform.sh"
+        "lib/shell_config.sh"
+        "commands/help.sh"
+        "commands/conf.sh"
+        "commands/uninstall.sh"
+    )
 
-    local script_dir
-    script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-    if [ -f "$script_dir/b.sh" ] && [ -f "$script_dir/routes.sh" ]; then
-        echo "Using local files from repository..."
-        cp "$script_dir/b.sh" "$routes_dir/b.sh"
-        cp "$script_dir/routes.sh" "$routes_dir/routes.sh"
-    else
-        if command -v curl >/dev/null 2>&1; then
-            curl -fsSL "$b_url" -o "$routes_dir/b.sh"
-            curl -fsSL "$routes_url" -o "$routes_dir/routes.sh"
-        elif command -v wget >/dev/null 2>&1; then
-            wget -qO "$routes_dir/b.sh" "$b_url"
-            wget -qO "$routes_dir/routes.sh" "$routes_url"
-        else
-            echo "Error: Neither curl nor wget is installed." >&2
-            exit 1
+    if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/routes.sh" ]; then
+        log_info "Using local files from repository..."
+        for file in "${files[@]}"; do
+            mkdir -p "$(dirname "$routes_dir/$file")"
+            if [ -f "$_SCRIPT_DIR/$file" ]; then
+                cp "$_SCRIPT_DIR/$file" "$routes_dir/$file"
+            fi
+        done
+        
+        # Also copy installers if they exist locally
+        if [ -d "$_SCRIPT_DIR/installers" ]; then
+            mkdir -p "$routes_dir/installers"
+            cp -r "$_SCRIPT_DIR/installers/"* "$routes_dir/installers/"
         fi
+    else
+        log_info "Downloading bootstrap scripts..."
+        local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
+        for file in "${files[@]}"; do
+            mkdir -p "$(dirname "$routes_dir/$file")"
+            local file_url="$base_url/$file"
+            if command -v curl >/dev/null 2>&1; then
+                curl -fsSL "$file_url" -o "$routes_dir/$file"
+            elif command -v wget >/dev/null 2>&1; then
+                wget -qO "$routes_dir/$file" "$file_url"
+            else
+                log_error "Neither curl nor wget is installed."
+                exit 1
+            fi
+        done
     fi
 
     # Set up shell configuration files
     for config_file in "${target_files[@]}"; do
         # 1. Clean up old embedded function block if it exists (from previous setup)
-        if grep -q "# >>> bootstrap-cli b function >>>" "$config_file" 2>/dev/null; then
-            sed -i '/# >>> bootstrap-cli b function >>>/,/# <<< bootstrap-cli b function <<</d' "$config_file"
-        fi
+        remove_block "$config_file" "bootstrap-cli b function"
 
         # 2. Clean up old loader block if it exists
-        if grep -q "# >>> bootstrap-cli setup >>>" "$config_file" 2>/dev/null; then
-            sed -i '/# >>> bootstrap-cli setup >>>/,/# <<< bootstrap-cli setup <<</d' "$config_file"
-        fi
+        remove_block "$config_file" "bootstrap-cli setup"
 
         # 3. Append the new lightweight loader block
-        echo "Adding bootstrap loader to $config_file..."
+        log_info "Adding bootstrap loader to $config_file..."
         cat << 'EOF' >> "$config_file"
 
 # >>> bootstrap-cli setup >>>
@@ -78,29 +127,18 @@ EOF
     done
 }
 
-install_bootstrap
+# Only execute installation if not sourced (Fix 3)
+if [ "$is_sourced" = false ]; then
+    install_bootstrap
 
-# Load the b function immediately in the current subshell
-if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
-    . "$HOME/.config/bootstrap/b.sh"
-fi
-
-# Handle sourcing the shell configuration file
-if [ "$is_sourced" = true ]; then
-    if [ -n "${ZSH_VERSION:-}" ] && [ -f "$HOME/.zshrc" ]; then
-        echo "Sourcing ~/.zshrc..."
-        . "$HOME/.zshrc"
-    elif [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ]; then
-        echo "Sourcing ~/.bashrc..."
-        . "$HOME/.bashrc"
+    # Load the b function immediately in the current subshell
+    if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        . "$HOME/.config/bootstrap/b.sh"
     fi
-else
-    echo
-    echo "Bootstrap CLI installed successfully!"
-    echo "To start using the 'b' command in this terminal session, run:"
-    if [ -n "${ZSH_VERSION:-}" ] || [ -f "$HOME/.zshrc" ]; then
-        echo "  source ~/.zshrc"
-    else
-        echo "  source ~/.bashrc"
+
+    # Handle sourcing the shell configuration file
+    if [ -n "${BASH_VERSION:-}" ] && [ -f "$HOME/.bashrc" ]; then
+        log_info "Sourcing ~/.bashrc..."
+        . "$HOME/.bashrc"
     fi
 fi

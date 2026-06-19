@@ -2,18 +2,8 @@
 #
 # Yazi Installer Script
 #
-# What this script does:
-# 1. Detects the Linux distribution.
-# 2. Prompts before installing or upgrading Yazi.
-# 3. Installs Yazi:
-#    * Arch Linux: Installs yazi via pacman.
-#    * Debian / Ubuntu: Downloads the latest .deb release package from GitHub and installs it.
-#    * Fedora: Enables the COPR repository (lihaohong/yazi) and installs yazi (initially skipping weak dependencies).
-# 4. Subsequently installs the dependencies (ffmpeg, 7zip / p7zip-full, jq, poppler, fd / fd-find, ripgrep, fzf, zoxide, resvg, imagemagick) to make Yazi available quicker.
-# 5. Configures a shell wrapper function 'y' in ~/.bashrc and ~/.zshrc that allows changing directory on exit.
-#
 
-# Run metascript to check if the shell is bash
+# Run metascript to check if the shell is bash and load libraries
 PARENT_DIR="$(dirname "$0")/.."
 METASCRIPT_LOCAL="$PARENT_DIR/bootstrap.sh"
 METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
@@ -33,37 +23,17 @@ fi
 
 set -euo pipefail
 
-TMP_DIR="$(mktemp -d)"
-
+TMP_DIR="$(make_temp_dir)"
 cleanup() {
     rm -rf "$TMP_DIR"
 }
 trap cleanup EXIT
 
-confirm() {
-    local prompt="$1"
-    local response
-
-    read -r -p "$prompt [y/N]: " response </dev/tty || true
-
-    [[ "$response" =~ ^[Yy]$ ]]
-}
-
 add_y_wrapper() {
-    local target_files=()
-    [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-    [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
+    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
 
-    for config_file in "${target_files[@]}"; do
-        # Clean up old versions if any exist
-        if grep -q "# >>> yazi wrapper >>>" "$config_file" 2>/dev/null; then
-            sed -i '/# >>> yazi wrapper >>>/,/# <<< yazi wrapper <<</d' "$config_file"
-        fi
-
-        echo "Adding yazi wrapper function 'y' to $config_file..."
-        cat << 'EOF' >> "$config_file"
-
-# >>> yazi wrapper >>>
+    local wrapper_content
+    wrapper_content=$(cat << 'EOF'
 # Shell wrapper for yazi to change directory on exit
 y() {
     local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
@@ -73,108 +43,112 @@ y() {
     fi
     rm -f -- "$tmp"
 }
-# <<< yazi wrapper <<<
 EOF
+)
+
+    for config_file in "${target_files[@]}"; do
+        log_info "Adding yazi wrapper function 'y' to $config_file..."
+        inject_block "$config_file" "yazi wrapper" "$wrapper_content"
     done
 
     # Source ~/.bashrc to make the alias immediately available in the current shell context (if sourced)
     if [ -f "$HOME/.bashrc" ]; then
-        echo "Sourcing ~/.bashrc..."
-        . "$HOME/.bashrc"
+        log_info "Sourcing ~/.bashrc..."
+        . "$HOME/.bashrc" 2>/dev/null || true
     fi
 }
 
 install_yazi() {
-    echo "Detecting distribution..."
+    local distro
+    distro=$(detect_distro)
 
-    if command -v pacman >/dev/null 2>&1; then
-        echo "Arch Linux detected"
-        if command -v yazi >/dev/null 2>&1; then
+    if [ "$distro" = "arch" ]; then
+        log_info "Arch Linux detected"
+        if has_command yazi; then
             if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         else
             if ! confirm "Install Yazi and its dependencies?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         fi
 
-        echo "Installing Yazi..."
-        sudo pacman -Sy --needed yazi
+        log_info "Installing Yazi..."
+        pkg_install yazi
+        log_info "Installing dependencies subsequently..."
+        pkg_install ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
 
-        echo "Installing dependencies subsequently..."
-        sudo pacman -S --needed ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
-
-    elif command -v apt >/dev/null 2>&1; then
-        echo "Debian/Ubuntu detected"
-        if command -v yazi >/dev/null 2>&1; then
+    elif [ "$distro" = "debian" ]; then
+        log_info "Debian/Ubuntu detected"
+        if has_command yazi; then
             if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         else
             if ! confirm "Install Yazi and its dependencies?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         fi
 
-        sudo apt update
-        sudo apt install -y curl wget git
+        pkg_install curl wget git
 
-        echo "Fetching latest Yazi version from GitHub..."
-        LATEST_TAG=$(curl -sL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
-        if [ -z "$LATEST_TAG" ]; then
-            LATEST_TAG="v26.5.6"
+        log_info "Fetching latest Yazi version from GitHub..."
+        local latest_tag
+        latest_tag=$(curl -sL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+        if [ -z "$latest_tag" ]; then
+            latest_tag="v26.5.6"
         fi
 
-        DEB_URL="https://github.com/sxyazi/yazi/releases/download/${LATEST_TAG}/yazi-x86_64-unknown-linux-gnu.deb"
-        echo "Downloading Yazi ${LATEST_TAG} from ${DEB_URL}..."
-        wget -qO "$TMP_DIR/yazi.deb" "$DEB_URL"
+        local deb_url="https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-x86_64-unknown-linux-gnu.deb"
+        log_info "Downloading Yazi ${latest_tag} from ${deb_url}..."
+        if has_command curl; then
+            curl -fsSL "$deb_url" -o "$TMP_DIR/yazi.deb"
+        else
+            wget -qO "$TMP_DIR/yazi.deb" "$deb_url"
+        fi
 
-        echo "Installing Yazi package..."
+        log_info "Installing Yazi package..."
         sudo apt install -y "$TMP_DIR/yazi.deb"
 
-        echo "Installing dependencies subsequently..."
-        sudo apt install -y ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick 7zip || \
-        sudo apt install -y ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick p7zip-full
+        log_info "Installing dependencies subsequently..."
+        pkg_install ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick 7zip || \
+        pkg_install ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick p7zip-full
 
-        # Create a symlink for fd-find if it doesn't already exist as fd
-        if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
-            echo "Creating symlink for fd..."
-            sudo ln -sf "$(command -v fdfind)" /usr/local/bin/fd
-        fi
+        create_fd_symlink
 
-    elif command -v dnf >/dev/null 2>&1; then
-        echo "Fedora detected"
-        if command -v yazi >/dev/null 2>&1; then
+    elif [ "$distro" = "fedora" ]; then
+        log_info "Fedora detected"
+        if has_command yazi; then
             if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         else
             if ! confirm "Install Yazi and its dependencies?"; then
-                echo "Skipping Yazi installation."
+                log_info "Skipping Yazi installation."
                 return
             fi
         fi
 
-        echo "Installing dnf-plugins-core..."
-        sudo dnf install -y dnf-plugins-core
+        log_info "Installing dnf-plugins-core..."
+        pkg_install dnf-plugins-core
 
-        echo "Enabling lihaohong/yazi copr repo..."
+        log_info "Enabling lihaohong/yazi copr repo..."
         sudo dnf copr enable -y lihaohong/yazi
 
-        echo "Installing Yazi (without weak dependencies first)..."
+        log_info "Installing Yazi (without weak dependencies first)..."
         sudo dnf install -y yazi --setopt=install_weak_deps=False
 
-        echo "Installing weak dependencies subsequently..."
-        sudo dnf install -y yazi
+        log_info "Installing weak dependencies subsequently..."
+        pkg_install yazi
 
     else
-        echo "Unsupported distribution."
+        log_error "Unsupported distribution."
         exit 1
     fi
 }
@@ -183,7 +157,7 @@ main() {
     install_yazi
     add_y_wrapper
     echo
-    echo "Yazi installation and configuration complete."
+    log_success "Yazi installation and configuration complete."
 }
 
 main "$@"

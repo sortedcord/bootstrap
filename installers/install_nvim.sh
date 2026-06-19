@@ -2,18 +2,8 @@
 #
 # Neovim Installer Script
 #
-# What this script does:
-# 1. Detects the Linux distribution.
-# 2. Installs required dependencies (git, wget, tar, curl, unzip, ripgrep, fd, cmake, make, gcc, python, nodejs, npm, xclip, wl-clipboard, fzf).
-# 3. Checks whether Neovim 0.11.7 is already installed.
-# 4. Prompts before installing or upgrading Neovim.
-# 5. Installs the official Neovim binary to /opt/nvim.
-# 6. Creates a symlink at /usr/local/bin/nvim.
-# 7. Clones the Neovim configuration into ~/.config/nvim.
-# 8. Configures shell files (~/.bashrc / ~/.zshrc) to set alias vim="nvim" and export EDITOR="nvim".
-#
 
-# Run metascript to check if the shell is bash
+# Run metascript to check if the shell is bash and load libraries
 PARENT_DIR="$(dirname "$0")/.."
 METASCRIPT_LOCAL="$PARENT_DIR/bootstrap.sh"
 METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
@@ -33,33 +23,21 @@ fi
 
 set -euo pipefail
 
-
 NVIM_VERSION="0.11.7"
-NVIM_URL="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-x86_64.tar.gz"
 NVIM_INSTALL_DIR="/opt/nvim"
 NVIM_CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
 NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
-TMP_DIR="$(mktemp -d)"
-
+TMP_DIR="$(make_temp_dir)"
 cleanup() {
     rm -rf "$TMP_DIR"
 }
 trap cleanup EXIT
 
-confirm() {
-    local prompt="$1"
-    local response
-
-    read -r -p "$prompt [y/N]: " response </dev/tty || true
-
-    [[ "$response" =~ ^[Yy]$ ]]
-}
-
 check_config_dir() {
     if [[ -d "$NVIM_CONFIG_DIR" ]]; then
         if confirm "$NVIM_CONFIG_DIR already exists. Replace it?"; then
-            echo "Existing configuration will be removed during setup."
+            log_info "Existing configuration will be removed during setup."
             rm -rf "$NVIM_CONFIG_DIR"
         else
             while true; do
@@ -69,7 +47,7 @@ check_config_dir() {
                 alt_dir="${alt_dir/#\~/$HOME}"
 
                 if [[ -z "$alt_dir" ]]; then
-                    echo "Directory path cannot be empty. Please try again."
+                    log_warn "Directory path cannot be empty. Please try again."
                     continue
                 fi
 
@@ -81,71 +59,74 @@ check_config_dir() {
 }
 
 install_packages() {
-    echo "Detecting distribution and installing dependencies..."
-
-    if command -v pacman >/dev/null 2>&1; then
-        echo "Arch Linux detected"
-        sudo pacman -Sy --needed git wget tar curl unzip ripgrep fd cmake make gcc python nodejs npm xclip wl-clipboard fzf
-
-    elif command -v apt >/dev/null 2>&1; then
-        echo "Debian/Ubuntu detected"
-        sudo apt update
-        sudo apt install -y git wget tar curl unzip ripgrep fd-find cmake build-essential python3 python3-pip python3-venv nodejs npm xclip wl-clipboard fzf
+    log_info "Detecting distribution and installing dependencies..."
+    pkg_install \
+        git wget tar curl unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        "arch:fd|debian:fd-find|fedora:fd-find" \
+        "arch:cmake|debian:cmake|fedora:cmake" \
+        "arch:make|debian:build-essential|fedora:make" \
+        "arch:gcc|debian:build-essential|fedora:gcc" \
+        "arch:python|debian:python3|fedora:python3" \
+        "debian:python3-pip|fedora:python3-pip" \
+        "debian:python3-venv" \
+        "fedora:gcc-c++"
         
-        # Create a symlink for fd-find if it doesn't already exist as fd
-        if ! command -v fd >/dev/null 2>&1 && command -v fdfind >/dev/null 2>&1; then
-            echo "Creating symlink for fd..."
-            sudo ln -sf "$(command -v fdfind)" /usr/local/bin/fd
-        fi
-
-    elif command -v dnf >/dev/null 2>&1; then
-        echo "Fedora detected"
-        sudo dnf install -y git wget tar curl unzip ripgrep fd-find cmake make gcc gcc-c++ python3 python3-pip nodejs npm xclip wl-clipboard fzf
-
-    else
-        echo "Unsupported distribution."
-        exit 1
-    fi
+    create_fd_symlink
 }
 
 install_nvim() {
     local current_version=""
 
-    if command -v nvim >/dev/null 2>&1; then
+    if has_command nvim; then
         current_version="$(nvim --version | head -n1 | awk '{print $2}')"
 
         if [[ "$current_version" == "v${NVIM_VERSION}" ]] || [[ "$current_version" == "${NVIM_VERSION}" ]]; then
-            echo "Neovim ${current_version} already installed."
+            log_info "Neovim ${current_version} already installed."
             return
         fi
 
-        echo "Detected Neovim ${current_version}"
+        log_info "Detected Neovim ${current_version}"
 
         if ! confirm "Upgrade to Neovim v${NVIM_VERSION}?"; then
-            echo "Skipping Neovim upgrade."
+            log_info "Skipping Neovim upgrade."
             return
         fi
     else
-        echo "Neovim not installed."
+        log_info "Neovim not installed."
 
         if ! confirm "Install Neovim v${NVIM_VERSION}?"; then
-            echo "Skipping Neovim installation."
+            log_info "Skipping Neovim installation."
             return
         fi
     fi
 
-    echo "Downloading Neovim v${NVIM_VERSION}..."
+    # Detect architecture to resolve the release binary name (Fix 4)
+    local arch
+    arch=$(detect_arch)
+    local nvim_arch=""
+    case "$arch" in
+        x86_64) nvim_arch="linux-x86_64" ;;
+        arm64)  nvim_arch="linux-arm64" ;;
+        *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
+    esac
 
-    wget -qO "$TMP_DIR/nvim.tar.gz" "$NVIM_URL"
+    local nvim_url="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${nvim_arch}.tar.gz"
+
+    log_info "Downloading Neovim v${NVIM_VERSION} for ${arch}..."
+    if has_command curl; then
+        curl -fsSL "$nvim_url" -o "$TMP_DIR/nvim.tar.gz"
+    else
+        wget -qO "$TMP_DIR/nvim.tar.gz" "$nvim_url"
+    fi
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 
     sudo rm -rf "$NVIM_INSTALL_DIR"
-    sudo mv "$TMP_DIR/nvim-linux-x86_64" "$NVIM_INSTALL_DIR"
+    sudo mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
 
     sudo ln -sf "$NVIM_INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
 
-    echo "Installed:"
+    log_success "Installed:"
     nvim --version | head -n1
 }
 
@@ -158,34 +139,26 @@ install_config() {
         rm -rf "$NVIM_CONFIG_DIR"
     fi
 
-    echo "Cloning configuration to $NVIM_CONFIG_DIR..."
+    log_info "Cloning configuration to $NVIM_CONFIG_DIR..."
     git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG_DIR"
-    echo "Configuration installed."
+    log_success "Configuration installed."
 }
 
 configure_shell() {
-    local target_files=()
-    [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-    [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
+    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
 
     for config_file in "${target_files[@]}"; do
         local modified=false
 
-        # Add alias vim=nvim if not present
-        if ! grep -q "alias vim=" "$config_file" 2>/dev/null; then
-            echo "Adding alias vim=nvim to $config_file..."
-            echo 'alias vim="nvim"' >> "$config_file"
+        if add_alias_if_missing "$config_file" "vim" "nvim"; then
             modified=true
         fi
 
-        # Add export EDITOR=nvim if not present
-        if ! grep -q "export EDITOR=" "$config_file" 2>/dev/null; then
-            echo "Setting EDITOR=nvim in $config_file..."
-            echo 'export EDITOR="nvim"' >> "$config_file"
+        if add_env_if_missing "$config_file" "EDITOR" "nvim"; then
             modified=true
         fi
 
-        # Source if modified
+        # Source if modified (only for bashrc, and not when sourced to prevent recursion)
         if [ "$modified" = true ] && [ "$config_file" = "$HOME/.bashrc" ]; then
             . "$config_file" 2>/dev/null || true
         fi
@@ -200,7 +173,7 @@ main() {
     configure_shell
 
     echo
-    echo "Installation complete."
+    log_success "Installation complete."
 }
 
 main "$@"
