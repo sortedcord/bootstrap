@@ -40,11 +40,40 @@ for script in "${SCRIPTS[@]}"; do
                 echo "Available bootstrap commands:"
                 # Non-installers first (aligned to 6 chars width)
                 printf "  %-6s - %s\n" "all" "List all available commands"
+                printf "  %-6s - %s\n" "conf" "Edit config (e.g. b conf nvim)"
                 printf "  %-6s - %s\n" "bye" "Uninstall Bootstrap CLI helper"
                 # Installers second (iterating procedurally)
                 for key in "${INSTALLER_KEYS[@]}"; do
                     printf "  %-6s - %s\n" "$key" "${INSTALLERS[$key]}"
                 done
+                ;;
+            conf)
+                config_name="${1:-}"
+                if [ -z "$config_name" ]; then
+                    echo "Usage: b conf <config_name> [files...]" >&2
+                    exit 1
+                fi
+                shift
+
+                config_dir=""
+                if [ -d "$HOME/.config/$config_name" ]; then
+                    config_dir="$HOME/.config/$config_name"
+                else
+                    config_dir=$(find "$HOME/.config" -mindepth 1 -maxdepth 1 -type d -iname "*$config_name*" 2>/dev/null | head -n1)
+                fi
+
+                if [ -n "$config_dir" ] && [ -d "$config_dir" ]; then
+                    cd "$config_dir"
+                    editor="${EDITOR:-nvim}"
+                    if [ $# -gt 0 ]; then
+                        $editor "$@"
+                    else
+                        $editor .
+                    fi
+                else
+                    echo "Could not find that directory" >&2
+                    exit 1
+                fi
                 ;;
             bye)
                 echo "Removing bootstrap CLI completely..."

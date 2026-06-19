@@ -32,6 +32,16 @@ b yazi
 b nvim,yazi
 ```
 
+You can also edit configurations located in your `~/.config/` directory by running:
+
+```bash
+b conf nvim
+b conf i3
+```
+
+It automatically fuzzy-finds the folder in case there is no exact match.
+
+
 ## Uninstallation
 
 To completely remove the bootstrap helper tool and clear out the shell configurations (leaving any installed software configs intact), run:
