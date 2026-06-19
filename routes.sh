@@ -8,10 +8,17 @@ if [ -z "${BASH_VERSION:-}" ]; then
     exit 1
 fi
 
+declare -A INSTALLERS=(
+    [nvim]="Install Neovim 0.11.7 and configuration"
+    [yazi]="Install Yazi terminal file manager and dependencies"
+    [zoxide]="Install Zoxide directory jumper"
+)
+# Order in which installers should be displayed
+INSTALLER_KEYS=(nvim yazi zoxide)
+
 SCRIPT_NAMES="${1:-}"
-if [ -z "$SCRIPT_NAMES" ]; then
-    echo "Usage: b <script1,script2,...> [args...]" >&2
-    exit 1
+if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
+    SCRIPT_NAMES="all"
 fi
 shift
 
@@ -19,46 +26,54 @@ shift
 IFS=',' read -ra SCRIPTS <<< "$SCRIPT_NAMES"
 
 for script in "${SCRIPTS[@]}"; do
-    case "$script" in
-        nvim)
-            echo "Launching Neovim installer..."
-            curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_nvim.sh" | bash -s -- "$@"
-            ;;
-        yazi)
-            echo "Launching Yazi installer..."
-            curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_yazi.sh" | bash -s -- "$@"
-            ;;
-        zoxide)
-            echo "Launching Zoxide installer..."
-            curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_zoxide.sh" | bash -s -- "$@"
-            ;;
-        bye)
-            echo "Removing bootstrap CLI completely..."
-            
-            target_files=()
-            [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-            [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
+    # Check if it is a registered installer
+    if [[ -n "${INSTALLERS[$script]:-}" ]]; then
+        # Capitalize first letter for display (e.g. nvim -> Neovim)
+        display_name="$(echo "${script:0:1}" | tr '[:lower:]' '[:upper:]')${script:1}"
+        echo "Launching ${display_name} installer..."
+        curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
 
-            for config_file in "${target_files[@]}"; do
-                # Remove loader setup
-                if grep -q "# >>> bootstrap-cli setup >>>" "$config_file" 2>/dev/null; then
-                    sed -i '/# >>> bootstrap-cli setup >>>/,/# <<< bootstrap-cli setup <<</d' "$config_file"
-                    echo "Removed bootstrap loader from $config_file"
-                fi
-                # Remove any old embedded 'b function' blocks if they exist
-                if grep -q "# >>> bootstrap-cli b function >>>" "$config_file" 2>/dev/null; then
-                    sed -i '/# >>> bootstrap-cli b function >>>/,/# <<< bootstrap-cli b function <<</d' "$config_file"
-                    echo "Removed old bootstrap function from $config_file"
-                fi
-            done
+    else
+        # Handle non-installer commands
+        case "$script" in
+            all)
+                echo "Available bootstrap commands:"
+                # Non-installers first (aligned to 6 chars width)
+                printf "  %-6s - %s\n" "all" "List all available commands"
+                printf "  %-6s - %s\n" "bye" "Uninstall Bootstrap CLI helper"
+                # Installers second (iterating procedurally)
+                for key in "${INSTALLER_KEYS[@]}"; do
+                    printf "  %-6s - %s\n" "$key" "${INSTALLERS[$key]}"
+                done
+                ;;
+            bye)
+                echo "Removing bootstrap CLI completely..."
+                
+                target_files=()
+                [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
+                [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
 
-            rm -rf "$HOME/.config/bootstrap"
-            echo "Bootstrap CLI removed successfully. (Note: Run 'unset -f b' to clear it from the current session)"
-            ;;
-        *)
-            echo "Error: Unknown script '$script'." >&2
-            echo "Available scripts: nvim, yazi, zoxide, bye" >&2
-            exit 1
-            ;;
-    esac
+                for config_file in "${target_files[@]}"; do
+                    # Remove loader setup
+                    if grep -q "# >>> bootstrap-cli setup >>>" "$config_file" 2>/dev/null; then
+                        sed -i '/# >>> bootstrap-cli setup >>>/,/# <<< bootstrap-cli setup <<</d' "$config_file"
+                        echo "Removed bootstrap loader from $config_file"
+                    fi
+                    # Remove any old embedded 'b function' blocks if they exist
+                    if grep -q "# >>> bootstrap-cli b function >>>" "$config_file" 2>/dev/null; then
+                        sed -i '/# >>> bootstrap-cli b function >>>/,/# <<< bootstrap-cli b function <<</d' "$config_file"
+                        echo "Removed old bootstrap function from $config_file"
+                    fi
+                done
+
+                rm -rf "$HOME/.config/bootstrap"
+                echo "Bootstrap CLI removed successfully. (Note: Run 'unset -f b' to clear it from the current session)"
+                ;;
+            *)
+                echo "Error: Unknown command '$script'." >&2
+                echo "Run 'b all' to list all available commands." >&2
+                exit 1
+                ;;
+        esac
+    fi
 done
