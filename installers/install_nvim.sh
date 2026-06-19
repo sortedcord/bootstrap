@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+#
+# Neovim Installer Script
+#
+# What this script does:
+# 1. Detects the Linux distribution.
+# 2. Installs required dependencies (git, wget, tar, curl, unzip, ripgrep, fd, cmake, make, gcc, python, nodejs, npm, xclip, wl-clipboard, fzf).
+# 3. Checks whether Neovim 0.11.7 is already installed.
+# 4. Prompts before installing or upgrading Neovim.
+# 5. Installs the official Neovim binary to /opt/nvim.
+# 6. Creates a symlink at /usr/local/bin/nvim.
+# 7. Clones the Neovim configuration into ~/.config/nvim.
+# 8. Configures shell files (~/.bashrc / ~/.zshrc) to set alias vim="nvim" and export EDITOR="nvim".
+#
 
 # Run metascript to check if the shell is bash
 PARENT_DIR="$(dirname "$0")/.."
@@ -150,11 +163,41 @@ install_config() {
     echo "Configuration installed."
 }
 
+configure_shell() {
+    local target_files=()
+    [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
+    [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
+
+    for config_file in "${target_files[@]}"; do
+        local modified=false
+
+        # Add alias vim=nvim if not present
+        if ! grep -q "alias vim=" "$config_file" 2>/dev/null; then
+            echo "Adding alias vim=nvim to $config_file..."
+            echo 'alias vim="nvim"' >> "$config_file"
+            modified=true
+        fi
+
+        # Add export EDITOR=nvim if not present
+        if ! grep -q "export EDITOR=" "$config_file" 2>/dev/null; then
+            echo "Setting EDITOR=nvim in $config_file..."
+            echo 'export EDITOR="nvim"' >> "$config_file"
+            modified=true
+        fi
+
+        # Source if modified
+        if [ "$modified" = true ] && [ "$config_file" = "$HOME/.bashrc" ]; then
+            . "$config_file" 2>/dev/null || true
+        fi
+    done
+}
+
 main() {
     check_config_dir
     install_packages
     install_nvim
     install_config
+    configure_shell
 
     echo
     echo "Installation complete."

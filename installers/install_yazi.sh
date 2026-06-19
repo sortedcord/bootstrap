@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
+#
+# Yazi Installer Script
+#
+# What this script does:
+# 1. Detects the Linux distribution.
+# 2. Prompts before installing or upgrading Yazi.
+# 3. Installs Yazi:
+#    * Arch Linux: Installs yazi via pacman.
+#    * Debian / Ubuntu: Downloads the latest .deb release package from GitHub and installs it.
+#    * Fedora: Enables the COPR repository (lihaohong/yazi) and installs yazi (initially skipping weak dependencies).
+# 4. Subsequently installs the dependencies (ffmpeg, 7zip / p7zip-full, jq, poppler, fd / fd-find, ripgrep, fzf, zoxide, resvg, imagemagick) to make Yazi available quicker.
+# 5. Configures a shell wrapper function 'y' in ~/.bashrc and ~/.zshrc that allows changing directory on exit.
+#
 
 # Run metascript to check if the shell is bash
 PARENT_DIR="$(dirname "$0")/.."
