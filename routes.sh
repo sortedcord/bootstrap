@@ -28,6 +28,10 @@ for script in "${SCRIPTS[@]}"; do
             echo "Launching Yazi installer..."
             curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_yazi.sh" | bash -s -- "$@"
             ;;
+        zoxide)
+            echo "Launching Zoxide installer..."
+            curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_zoxide.sh" | bash -s -- "$@"
+            ;;
         bye)
             echo "Removing bootstrap CLI completely..."
             
@@ -53,7 +57,7 @@ for script in "${SCRIPTS[@]}"; do
             ;;
         *)
             echo "Error: Unknown script '$script'." >&2
-            echo "Available scripts: nvim, yazi, bye" >&2
+            echo "Available scripts: nvim, yazi, zoxide, bye" >&2
             exit 1
             ;;
     esac
