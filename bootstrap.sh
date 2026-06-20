@@ -89,8 +89,8 @@ install_bootstrap() {
     local files=(
         "VERSION"
         "b.sh"
-        "routes.sh"
-        "registry.sh"
+        "lib/routes.sh"
+        "lib/registry.sh"
         "lib/common.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
@@ -100,7 +100,7 @@ install_bootstrap() {
         "commands/up.sh"
     )
 
-    if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/routes.sh" ]; then
+    if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/lib/routes.sh" ]; then
         log_info "Using local files from repository..."
         for file in "${files[@]}"; do
             mkdir -p "$(dirname "$routes_dir/$file")"
@@ -221,7 +221,7 @@ if [ "$is_sourced" = false ]; then
     clear 2>/dev/null || true
 
     # Locate or download pixel_art.ansi and VERSION
-    _art_file="$_SCRIPT_DIR/pixel_art.ansi"
+    _art_file="$_SCRIPT_DIR/assets/pixel_art.ansi"
     _version_file="$_SCRIPT_DIR/VERSION"
     
     if [ ! -f "$_art_file" ]; then
@@ -231,10 +231,10 @@ if [ "$is_sourced" = false ]; then
             _base_url="${_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
             if [ ! -f "$_art_file" ]; then
                 if command -v curl >/dev/null 2>&1; then
-                    curl -fsSL -o "$_art_file" "$_base_url/pixel_art.ansi" 2>/dev/null
+                    curl -fsSL -o "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
                     curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null
                 elif command -v wget >/dev/null 2>&1; then
-                    wget -qO "$_art_file" "$_base_url/pixel_art.ansi" 2>/dev/null
+                    wget -qO "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
                     wget -qO "$_version_file" "$_base_url/VERSION" 2>/dev/null
                 fi
             fi

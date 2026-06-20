@@ -6,7 +6,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
 INSTALLERS_DIR="$REPO_DIR/installers"
-REGISTRY_FILE="$REPO_DIR/registry.sh"
+REGISTRY_FILE="$REPO_DIR/lib/registry.sh"
 
 echo "==> Generating registry.sh..."
 

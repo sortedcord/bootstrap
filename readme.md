@@ -137,7 +137,7 @@ If you want to audit the core Bootstrap CLI itself before running it:
 
 ```bash
 curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh
-curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/routes.sh
+curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/lib/routes.sh
 ```
 
 and review the contents before piping it into a shell.

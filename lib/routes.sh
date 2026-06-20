@@ -20,19 +20,19 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
 # Source registry
 if [ -f "$_SCRIPT_DIR/registry.sh" ]; then
     . "$_SCRIPT_DIR/registry.sh"
-elif [ -f "$BOOTSTRAP_DIR/registry.sh" ]; then
-    . "$BOOTSTRAP_DIR/registry.sh"
+elif [ -f "$BOOTSTRAP_DIR/lib/registry.sh" ]; then
+    . "$BOOTSTRAP_DIR/lib/registry.sh"
 else
     # Standalone/remote fallback: download registry
     _tmp_registry=$(mktemp)
     BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
     BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
     if has_command curl; then
-        curl -fsSL "${BOOTSTRAP_BASE_URL}/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
-        curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/registry.sh" -o "$_tmp_registry" 2>/dev/null
+        curl -fsSL "${BOOTSTRAP_BASE_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
+        curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null
     elif has_command wget; then
-        wget -qO "$_tmp_registry" "${BOOTSTRAP_BASE_URL}/registry.sh" 2>/dev/null || \
-        wget -qO "$_tmp_registry" "${BOOTSTRAP_FALLBACK_URL}/registry.sh" 2>/dev/null
+        wget -qO "$_tmp_registry" "${BOOTSTRAP_BASE_URL}/lib/registry.sh" 2>/dev/null || \
+        wget -qO "$_tmp_registry" "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" 2>/dev/null
     fi
     if [ -s "$_tmp_registry" ]; then
         . "$_tmp_registry"

@@ -7,7 +7,7 @@ b() {
     fi
 
     local routes_dir="$HOME/.config/bootstrap"
-    local routes_file="$routes_dir/routes.sh"
+    local routes_file="$routes_dir/lib/routes.sh"
     local last_update_file="$routes_dir/.last_b_update"
 
     local current_time

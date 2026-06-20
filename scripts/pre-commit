@@ -7,7 +7,7 @@ set -euo pipefail
 # Generate the registry dynamically and stage it
 if [ -f "./scripts/generate_registry.sh" ]; then
     ./scripts/generate_registry.sh
-    git add registry.sh
+    git add lib/registry.sh
 fi
 
 VERSION_FILE="VERSION"
