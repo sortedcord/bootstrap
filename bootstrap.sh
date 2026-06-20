@@ -36,14 +36,36 @@ else
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
     _LIBS=("lib/common.sh" "lib/platform.sh" "lib/shell_config.sh")
-    for _lib in "${_LIBS[@]}"; do
-        mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
-        if command -v curl >/dev/null 2>&1; then
-            curl -fsSL "$_BASE_URL/$_lib" -o "$BOOTSTRAP_TMP_DIR/$_lib" 2>/dev/null
-        elif command -v wget >/dev/null 2>&1; then
-            wget -qO "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib" 2>/dev/null
-        fi
-    done
+    
+    _has_curl=false
+    _has_wget=false
+    if command -v curl >/dev/null 2>&1; then
+        _has_curl=true
+    elif command -v wget >/dev/null 2>&1; then
+        _has_wget=true
+    else
+        echo "Error: Neither curl nor wget is installed to download libraries." >&2
+        exit 1
+    fi
+
+    if [ "$_has_curl" = true ]; then
+        _curl_args=()
+        for _lib in "${_LIBS[@]}"; do
+            mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
+            _curl_args+=("-o" "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib")
+        done
+        curl -fsSL "${_curl_args[@]}" 2>/dev/null
+    elif [ "$_has_wget" = true ]; then
+        _pids=()
+        for _lib in "${_LIBS[@]}"; do
+            mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
+            wget -qO "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib" 2>/dev/null &
+            _pids+=($!)
+        done
+        for _pid in "${_pids[@]}"; do
+            wait "$_pid" || true
+        done
+    fi
     
     if [ -f "$BOOTSTRAP_TMP_DIR/lib/common.sh" ]; then
         . "$BOOTSTRAP_TMP_DIR/lib/common.sh"
@@ -93,18 +115,47 @@ install_bootstrap() {
     else
         log_info "Downloading bootstrap scripts..."
         local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-        for file in "${files[@]}"; do
-            mkdir -p "$(dirname "$routes_dir/$file")"
-            local file_url="$base_url/$file"
-            if command -v curl >/dev/null 2>&1; then
-                curl -fsSL "$file_url" -o "$routes_dir/$file"
-            elif command -v wget >/dev/null 2>&1; then
-                wget -qO "$routes_dir/$file" "$file_url"
-            else
-                log_error "Neither curl nor wget is installed."
+        
+        local has_curl=false
+        local has_wget=false
+        if command -v curl >/dev/null 2>&1; then
+            has_curl=true
+        elif command -v wget >/dev/null 2>&1; then
+            has_wget=true
+        else
+            log_error "Neither curl nor wget is installed."
+            exit 1
+        fi
+
+        if [ "$has_curl" = true ]; then
+            local curl_args=()
+            for file in "${files[@]}"; do
+                mkdir -p "$(dirname "$routes_dir/$file")"
+                curl_args+=("-o" "$routes_dir/$file" "$base_url/$file")
+            done
+            if ! curl -fsSL "${curl_args[@]}"; then
+                log_error "Failed to download bootstrap scripts."
                 exit 1
             fi
-        done
+        elif [ "$has_wget" = true ]; then
+            local pids=()
+            for file in "${files[@]}"; do
+                mkdir -p "$(dirname "$routes_dir/$file")"
+                local file_url="$base_url/$file"
+                wget -qO "$routes_dir/$file" "$file_url" &
+                pids+=($!)
+            done
+            local err=0
+            for pid in "${pids[@]}"; do
+                if ! wait "$pid"; then
+                    err=1
+                fi
+            done
+            if [ "$err" -ne 0 ]; then
+                log_error "Failed to download some bootstrap scripts."
+                exit 1
+            fi
+        fi
     fi
 
     # Set up shell configuration files
