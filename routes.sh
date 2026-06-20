@@ -21,11 +21,12 @@ declare -A INSTALLERS=(
     [bat]="Install Bat (alternative to cat) and configure alias"
     [node]="Install Node.js (LTS) and NVM"
     [nvim]="Install Neovim 0.11.7 and configuration"
+    [pnpm]="Install pnpm package manager"
     [yazi]="Install Yazi terminal file manager and dependencies"
     [zoxide]="Install Zoxide directory jumper"
 )
 # Order in which installers should be displayed
-INSTALLER_KEYS=(agy bat node nvim yazi zoxide)
+INSTALLER_KEYS=(agy bat node nvim pnpm yazi zoxide)
 
 SCRIPT_NAMES="${1:-}"
 if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
