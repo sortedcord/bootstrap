@@ -197,7 +197,29 @@ EOF
 # Only execute installation if not sourced (Fix 3)
 if [ "$is_sourced" = false ]; then
     clear 2>/dev/null || true
-    if [ -f "$_SCRIPT_DIR/pixel_art.ansi" ]; then
+
+    # Locate or download pixel_art.ansi and VERSION
+    _art_file="$_SCRIPT_DIR/pixel_art.ansi"
+    _version_file="$_SCRIPT_DIR/VERSION"
+    
+    if [ ! -f "$_art_file" ]; then
+        if [ -n "${BOOTSTRAP_TMP_DIR:-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
+            _art_file="$BOOTSTRAP_TMP_DIR/pixel_art.ansi"
+            _version_file="$BOOTSTRAP_TMP_DIR/VERSION"
+            _base_url="${_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
+            if [ ! -f "$_art_file" ]; then
+                if command -v curl >/dev/null 2>&1; then
+                    curl -fsSL -o "$_art_file" "$_base_url/pixel_art.ansi" 2>/dev/null
+                    curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null
+                elif command -v wget >/dev/null 2>&1; then
+                    wget -qO "$_art_file" "$_base_url/pixel_art.ansi" 2>/dev/null
+                    wget -qO "$_version_file" "$_base_url/VERSION" 2>/dev/null
+                fi
+            fi
+        fi
+    fi
+
+    if [ -f "$_art_file" ]; then
         # Calculate terminal width and center the logo
         _cols=""
         if command -v tput >/dev/null 2>&1; then
@@ -219,7 +241,7 @@ if [ "$is_sourced" = false ]; then
             if [ "$_padding_width" -gt 0 ]; then
                 _padding=$(printf "%${_padding_width}s" "")
             fi
-            sed "s/^/$_padding/" "$_SCRIPT_DIR/pixel_art.ansi"
+            sed "s/^/$_padding/" "$_art_file"
             echo
             cat << 'EOF' | sed "s/^/$_padding/"
 ▀█████████▄   ▄██████▄   ▄██████▄      ███                      
@@ -245,20 +267,21 @@ EOF
             
             # Display centered version of bootstrap in bold
             _version=""
-            if [ -f "$_SCRIPT_DIR/VERSION" ]; then
-                _version=$(cat "$_SCRIPT_DIR/VERSION" | tr -d '\r\n')
+            if [ -f "$_version_file" ]; then
+                _version=$(cat "$_version_file" | tr -d '\r\n')
             fi
-            if [ -n "$_version" ]; then
-                _version_str="v$_version"
-                _version_len=${#_version_str}
-                _version_padding_width=$(( (_cols - _version_len) / 2 ))
-                _version_padding=""
-                if [ "$_version_padding_width" -gt 0 ]; then
-                    _version_padding=$(printf "%${_version_padding_width}s" "")
-                fi
-                printf "%s\033[1m%s\033[0m\n" "$_version_padding" "$_version_str"
-                echo
+            if [ -z "$_version" ]; then
+                _version="1.0.7" # Fallback matching VERSION file
             fi
+            _version_str="v$_version"
+            _version_len=${#_version_str}
+            _version_padding_width=$(( (_cols - _version_len) / 2 ))
+            _version_padding=""
+            if [ "$_version_padding_width" -gt 0 ]; then
+                _version_padding=$(printf "%${_version_padding_width}s" "")
+            fi
+            printf "%s\033[1m%s\033[0m\n" "$_version_padding" "$_version_str"
+            echo
             
             # Display centered aqua blue progress bar
             _bar_width=40
