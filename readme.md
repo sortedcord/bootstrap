@@ -12,7 +12,7 @@ Here is a comparison of the size and complexity of using Bootstrap (`to b`) vers
 
 | application | to b | not to b |
 | :--- | :--- | :--- |
-| **Antigravity CLI (`agy`)** | 197 lines | N/A (Official binary distribution) |
+| **Antigravity CLI (`agy`)** | 197 lines | 239 lines (Official Antigravity install script) |
 | **Bat (`bat`)** | 155 lines | N/A (Standard package install) |
 | **Node.js & NVM (`node`)** | 156 lines | 507 lines (Official NVM install script) |
 | **Neovim (`nvim`)** | 178 lines | N/A (Official binary/config distribution) |

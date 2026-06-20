@@ -196,6 +196,96 @@ EOF
 
 # Only execute installation if not sourced (Fix 3)
 if [ "$is_sourced" = false ]; then
+    clear 2>/dev/null || true
+    if [ -f "$_SCRIPT_DIR/pixel_art.ansi" ]; then
+        # Calculate terminal width and center the logo
+        _cols=""
+        if command -v tput >/dev/null 2>&1; then
+            _cols=$(tput cols 2>/dev/null)
+        fi
+        if [ -z "$_cols" ] || ! [ "$_cols" -gt 0 ] 2>/dev/null; then
+            if command -v stty >/dev/null 2>&1; then
+                _cols=$(stty size 2>/dev/null | cut -d' ' -f2)
+            fi
+        fi
+        if [ -z "$_cols" ] || ! [ "$_cols" -gt 0 ] 2>/dev/null; then
+            _cols="${COLUMNS:-0}"
+        fi
+
+        _logo_width=64
+        if [ -n "$_cols" ] && [ "$_cols" -ge "$_logo_width" ] 2>/dev/null; then
+            _padding_width=$(( (_cols - _logo_width) / 2 ))
+            _padding=""
+            if [ "$_padding_width" -gt 0 ]; then
+                _padding=$(printf "%${_padding_width}s" "")
+            fi
+            sed "s/^/$_padding/" "$_SCRIPT_DIR/pixel_art.ansi"
+            echo
+            cat << 'EOF' | sed "s/^/$_padding/"
+▀█████████▄   ▄██████▄   ▄██████▄      ███                      
+  ███    ███ ███    ███ ███    ███ ▀█████████▄                  
+  ███    ███ ███    ███ ███    ███    ▀███▀▀██                  
+ ▄███▄▄▄██▀  ███    ███ ███    ███     ███   ▀                  
+▀▀███▀▀▀██▄  ███    ███ ███    ███     ███                      
+  ███    ██▄ ███    ███ ███    ███     ███                      
+  ███    ███ ███    ███ ███    ███     ███                      
+▄█████████▀   ▀██████▀   ▀██████▀     ▄████▀                    
+                                                                
+   ▄████████     ███        ▄████████    ▄████████    ▄███████▄ 
+  ███    ███ ▀█████████▄   ███    ███   ███    ███   ███    ███ 
+  ███    █▀     ▀███▀▀██   ███    ███   ███    ███   ███    ███ 
+  ███            ███   ▀  ▄███▄▄▄▄██▀   ███    ███   ███    ███ 
+▀███████████     ███     ▀▀███▀▀▀▀▀   ▀███████████ ▀█████████▀  
+         ███     ███     ▀███████████   ███    ███   ███        
+   ▄█    ███     ███       ███    ███   ███    ███   ███        
+ ▄████████▀     ▄████▀     ███    ███   ███    █▀   ▄████▀      
+                           ███    ███                           
+EOF
+            echo
+            
+            # Display centered version of bootstrap in bold
+            _version=""
+            if [ -f "$_SCRIPT_DIR/VERSION" ]; then
+                _version=$(cat "$_SCRIPT_DIR/VERSION" | tr -d '\r\n')
+            fi
+            if [ -n "$_version" ]; then
+                _version_str="v$_version"
+                _version_len=${#_version_str}
+                _version_padding_width=$(( (_cols - _version_len) / 2 ))
+                _version_padding=""
+                if [ "$_version_padding_width" -gt 0 ]; then
+                    _version_padding=$(printf "%${_version_padding_width}s" "")
+                fi
+                printf "%s\033[1m%s\033[0m\n" "$_version_padding" "$_version_str"
+                echo
+            fi
+            
+            # Display centered aqua blue progress bar
+            _bar_width=40
+            _bar_padding_width=$(( (_cols - (_bar_width + 6)) / 2 ))
+            _bar_padding=""
+            if [ "$_bar_padding_width" -gt 0 ]; then
+                _bar_padding=$(printf "%${_bar_padding_width}s" "")
+            fi
+            
+            _filled_all="████████████████████████████████████████"
+            _empty_all="░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░"
+            
+            # Hide cursor
+            printf "\033[?25l"
+            
+            for i in $(seq 1 40); do
+                _filled_part="${_filled_all:0:i}"
+                _empty_part="${_empty_all:i}"
+                _pct=$(( i * 100 / 40 ))
+                printf "\r%s\033[38;2;0;210;255m%s\033[90m%s\033[0m %3d%%" "$_bar_padding" "$_filled_part" "$_empty_part" "$_pct"
+                sleep 0.05
+            done
+            
+            # Restore cursor and print newline
+            printf "\033[?25h\n\n"
+        fi
+    fi
     install_bootstrap
 
     # Load the b function immediately in the current subshell
