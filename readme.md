@@ -44,6 +44,13 @@ b con i3
 
 It automatically fuzzy-finds the folder in case there is no exact match.
 
+To check for updates and update the tool manually:
+
+```bash
+b up
+# Or to force a reinstall of the CLI files:
+b up --force
+```
 
 ## Uninstallation
 
@@ -54,6 +61,13 @@ b bye
 ```
 
 Then reload your shell configuration or run `unset -f b` to clear the function definition from your current terminal session.
+
+## Development
+
+If you are developing this tool locally:
+
+1. Clone the repository.
+2. Run `./bootstrap.sh` to install the CLI from your local copy. This will also automatically install a Git pre-commit hook (`scripts/pre-commit`) that auto-increments the patch version in the `VERSION` file on each commit.
 
 ## Philosophy
 

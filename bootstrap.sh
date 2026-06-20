@@ -88,6 +88,7 @@ install_bootstrap() {
 
     # List of all files to download/copy
     local files=(
+        "VERSION"
         "b.sh"
         "routes.sh"
         "lib/common.sh"
@@ -96,6 +97,7 @@ install_bootstrap() {
         "commands/help.sh"
         "commands/con.sh"
         "commands/uninstall.sh"
+        "commands/up.sh"
     )
 
     if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/routes.sh" ]; then
@@ -180,6 +182,17 @@ EOF
     # Initialize the last update timestamp to prevent immediate update on first execution (Fix 2)
     local last_update_file="$routes_dir/.last_b_update"
     date +%s 2>/dev/null > "$last_update_file" || date +%s > "$last_update_file"
+
+    # Set up pre-commit hook if in a git repository locally
+    if [ -d "$_SCRIPT_DIR/.git" ]; then
+        log_info "Setting up git pre-commit hook..."
+        mkdir -p "$_SCRIPT_DIR/.git/hooks"
+        if [ -f "$_SCRIPT_DIR/scripts/pre-commit" ]; then
+            cp "$_SCRIPT_DIR/scripts/pre-commit" "$_SCRIPT_DIR/.git/hooks/pre-commit"
+            chmod +x "$_SCRIPT_DIR/.git/hooks/pre-commit"
+            log_success "Pre-commit hook installed to .git/hooks/pre-commit"
+        fi
+    fi
 }
 
 # Only execute installation if not sourced (Fix 3)

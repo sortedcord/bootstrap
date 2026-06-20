@@ -15,19 +15,45 @@ b() {
     local last_update=0
     [ -f "$last_update_file" ] && last_update=$(cat "$last_update_file" 2>/dev/null || echo 0)
 
-    # Update everything once every 24 hours, or if routes.sh is missing
-    if [ $((current_time - last_update)) -gt 86400 ] || [ ! -f "$routes_file" ]; then
-        local bootstrap_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
-        local tmp_bootstrap
-        tmp_bootstrap="$(mktemp)"
-        
-        # Download and run the bootstrap installer to update all CLI files
-        if curl -fsSL "$bootstrap_url" -o "$tmp_bootstrap" 2>/dev/null || wget -qO "$tmp_bootstrap" "$bootstrap_url" 2>/dev/null; then
-            if bash "$tmp_bootstrap"; then
-                echo "$current_time" > "$last_update_file"
+    # Version comparison helper (returns 0 if $1 < $2, 1 otherwise)
+    _version_lt() {
+        [ "$1" = "$2" ] && return 1
+        local IFS=.
+        local i ver1=($1) ver2=($2)
+        for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
+        for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done
+        for ((i=0; i<3; i++)); do
+            if ((10#${ver1[i]} < 10#${ver2[i]})); then
+                return 0
+            elif ((10#${ver1[i]} > 10#${ver2[i]})); then
+                return 1
+            fi
+        done
+        return 1
+    }
+
+    # Auto-update check: once every 24 hours, or if routes.sh or VERSION is missing
+    if [ $((current_time - last_update)) -gt 86400 ] || [ ! -f "$routes_file" ] || [ ! -f "$routes_dir/VERSION" ]; then
+        # Update the timestamp immediately to prevent spamming on connection errors
+        echo "$current_time" > "$last_update_file"
+
+        local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
+        local local_ver="0.0.0"
+        [ -f "$routes_dir/VERSION" ] && local_ver=$(cat "$routes_dir/VERSION" 2>/dev/null | tr -d '[:space:]')
+
+        local remote_ver
+        if remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null || wget -qO- "$base_url/VERSION" 2>/dev/null); then
+            remote_ver=$(echo "$remote_ver" | tr -d '[:space:]')
+            if [ -n "$remote_ver" ] && _version_lt "$local_ver" "$remote_ver"; then
+                echo "New version $remote_ver available (local: $local_ver). Auto-updating..." >&2
+                local tmp_bootstrap
+                tmp_bootstrap="$(mktemp)"
+                if curl -fsSL "$base_url/bootstrap.sh" -o "$tmp_bootstrap" 2>/dev/null || wget -qO "$tmp_bootstrap" "$base_url/bootstrap.sh" 2>/dev/null; then
+                    bash "$tmp_bootstrap" >/dev/null 2>&1
+                fi
+                rm -f "$tmp_bootstrap"
             fi
         fi
-        rm -f "$tmp_bootstrap"
     fi
 
     if [ ! -f "$routes_file" ]; then
@@ -48,7 +74,7 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all con bye"
+        opts="all con bye up"
         
         local routes_file="$HOME/.config/bootstrap/routes.sh"
         if [ -f "$routes_file" ]; then

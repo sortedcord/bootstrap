@@ -83,6 +83,14 @@ for script in "${SCRIPTS[@]}"; do
                     exit 1
                 fi
                 ;;
+            up)
+                if [ -f "$BOOTSTRAP_DIR/commands/up.sh" ]; then
+                    . "$BOOTSTRAP_DIR/commands/up.sh" "$@"
+                else
+                    log_error "Update command script not found."
+                    exit 1
+                fi
+                ;;
             bye)
                 if [ -f "$BOOTSTRAP_DIR/commands/uninstall.sh" ]; then
                     . "$BOOTSTRAP_DIR/commands/uninstall.sh"
