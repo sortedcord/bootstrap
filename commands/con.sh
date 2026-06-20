@@ -1,9 +1,9 @@
-# Command: conf
+# Command: con
 # Edits configurations in ~/.config/
 
 config_name="${1:-}"
 if [ -z "$config_name" ]; then
-    log_error "Usage: b conf <config_name> [files...]"
+    log_error "Usage: b con <config_name> [files...]"
     exit 1
 fi
 shift

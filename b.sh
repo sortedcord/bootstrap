@@ -48,7 +48,7 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all conf bye"
+        opts="all con bye"
         
         local routes_file="$HOME/.config/bootstrap/routes.sh"
         if [ -f "$routes_file" ]; then
@@ -82,8 +82,8 @@ _b_completion() {
         return 0
     fi
 
-    # If completing arguments for 'b conf <config_dir>'
-    if [ "$COMP_CWORD" -eq 2 ] && [ "$prev" = "conf" ]; then
+    # If completing arguments for 'b con <config_dir>'
+    if [ "$COMP_CWORD" -eq 2 ] && [ "$prev" = "con" ]; then
         # List of directories in ~/.config/ to choose from
         local config_dirs
         config_dirs=$(find "$HOME/.config" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null)

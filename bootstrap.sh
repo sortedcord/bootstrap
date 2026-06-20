@@ -72,7 +72,7 @@ install_bootstrap() {
         "lib/platform.sh"
         "lib/shell_config.sh"
         "commands/help.sh"
-        "commands/conf.sh"
+        "commands/con.sh"
         "commands/uninstall.sh"
     )
 

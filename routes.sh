@@ -71,9 +71,9 @@ for script in "${SCRIPTS[@]}"; do
                     exit 1
                 fi
                 ;;
-            conf)
-                if [ -f "$BOOTSTRAP_DIR/commands/conf.sh" ]; then
-                    . "$BOOTSTRAP_DIR/commands/conf.sh" "$@"
+            con)
+                if [ -f "$BOOTSTRAP_DIR/commands/con.sh" ]; then
+                    . "$BOOTSTRAP_DIR/commands/con.sh" "$@"
                 else
                     log_error "Config editor command script not found."
                     exit 1

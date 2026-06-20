@@ -36,8 +36,8 @@ b nvim,yazi
 You can also edit configurations located in your `~/.config/` directory by running:
 
 ```bash
-b conf nvim
-b conf i3
+b con nvim
+b con i3
 ```
 
 It automatically fuzzy-finds the folder in case there is no exact match.
