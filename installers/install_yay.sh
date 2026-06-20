@@ -35,15 +35,7 @@ install_yay() {
     fi
 
     if has_command yay; then
-        if ! confirm "Yay is already installed. Reinstall/Upgrade?"; then
-            log_info "Skipping Yay installation."
-            return
-        fi
-    else
-        if ! confirm "Install Yay?"; then
-            log_info "Skipping Yay installation."
-            return
-        fi
+        log_info "Yay is already installed."
     fi
 
     local needs_install=false

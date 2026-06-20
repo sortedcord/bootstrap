@@ -41,6 +41,23 @@ b yazi
 b nvim,yazi
 ```
 
+### Inspecting and Editing Installers (`b ware`)
+
+If you want to inspect and edit an installer script before running it (for example, to change version numbers, paths, or customize the logic), you can use the intermediate `b ware` command:
+
+```bash
+b ware nvim
+b ware starship,zoxide
+```
+
+This opens the installer script in your preferred `$EDITOR` (defaulting to standard terminal editors if `$EDITOR` is unset). After you edit and close the file, the modified script runs automatically.
+
+To bypass the editor and install the tool directly using the `ware` command, append the `-y` flag:
+
+```bash
+b ware nvim -y
+```
+
 You can also edit configurations located in your `~/.config/` directory by running:
 
 ```bash

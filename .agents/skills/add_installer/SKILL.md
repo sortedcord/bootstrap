@@ -9,7 +9,7 @@ This skill provides everything needed to add a new installer to the bootstrap pr
 
 ## Project Overview
 
-Bootstrap CLI (`b`) is a bash-based tool installer and system bootstrapper. Users run `b <name>` to install tools (e.g., `b nvim`, `b bat`). The project lives at the workspace root.
+Bootstrap CLI (`b`) is a bash-based tool installer and system bootstrapper. Users run `b <name>` or `b ware <name>` to install or edit tools (e.g., `b nvim`, `b ware bat`). The project lives at the workspace root.
 
 ### Key Directories
 
@@ -54,7 +54,10 @@ Make **two** edits to `routes.sh`:
 
 ### Step 3: Verify (optional)
 
-Run `bash routes.sh` or `b all` to confirm the new installer appears in the help output.
+Verify that the installer works and appears in the help output:
+- Run `b all` to confirm it appears in the help list.
+- Run `b ware <name> -y` to test direct installation.
+- Run `b ware <name>` to test the interactive editing flow.
 
 ---
 

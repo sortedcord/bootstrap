@@ -31,15 +31,7 @@ trap cleanup EXIT
 
 install_nvm() {
     if has_command nvm || [ -s "$HOME/.nvm/nvm.sh" ]; then
-        if ! confirm "NVM is already installed. Reinstall/Upgrade?"; then
-            log_info "Skipping NVM installation."
-            return 0
-        fi
-    else
-        if ! confirm "Install NVM (Node Version Manager)?"; then
-            log_info "Skipping NVM installation."
-            return 0
-        fi
+        log_info "NVM is already installed."
     fi
 
     # Ensure required commands are installed
@@ -116,17 +108,6 @@ install_node() {
 
     if has_command node; then
         log_info "Currently installed Node.js version: $(node --version)"
-        if ! confirm "Install/Update to latest Node.js LTS version?"; then
-            log_info "Skipping Node.js installation."
-            set -u
-            return 0
-        fi
-    else
-        if ! confirm "Install Node.js LTS version?"; then
-            log_info "Skipping Node.js installation."
-            set -u
-            return 0
-        fi
     fi
 
     log_info "Installing Node.js LTS version..."

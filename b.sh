@@ -77,7 +77,7 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all con bye up"
+        opts="all con bye up ware"
         
         local routes_file="$HOME/.config/bootstrap/routes.sh"
         if [ -f "$routes_file" ]; then
@@ -108,6 +108,36 @@ _b_completion() {
         fi
 
         COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
+        return 0
+    fi
+
+    # If completing arguments for 'b ware <tool>'
+    if [ "$COMP_CWORD" -eq 2 ] && [ "$prev" = "ware" ]; then
+        local routes_file="$HOME/.config/bootstrap/routes.sh"
+        local installer_keys=""
+        if [ -f "$routes_file" ]; then
+            installer_keys=$(grep -E "^INSTALLER_KEYS=" "$routes_file" 2>/dev/null | sed -E 's/INSTALLER_KEYS=\(([^)]+)\)/\1/' 2>/dev/null)
+        fi
+        [ -z "$installer_keys" ] && installer_keys="agy bat node nvim pnpm rust starship yay yazi zoxide"
+
+        # Support comma-separated completions (e.g. b ware nvim,ya<TAB>)
+        if [[ "$cur" == *,* ]]; then
+            local prefix="${cur%,*}"
+            local last="${cur##*,}"
+            local matches
+            matches=$(compgen -W "$installer_keys" -- "$last")
+            if [ -n "$matches" ]; then
+                COMPREPLY=()
+                for m in $matches; do
+                    if [[ ",$prefix," != *",$m,"* ]]; then
+                        COMPREPLY+=("${prefix},${m}")
+                    fi
+                done
+            fi
+            return 0
+        fi
+
+        COMPREPLY=( $(compgen -W "$installer_keys" -- "$cur") )
         return 0
     fi
 

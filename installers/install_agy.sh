@@ -32,15 +32,6 @@ install_agy() {
     if [ -f "$BINARY_PATH" ]; then
         log_info "Notice: 'agy' is already installed at $BINARY_PATH."
         log_info "The Antigravity CLI automatically self-updates in the background during regular runs."
-        if ! confirm "Do you want to perform a fresh reinstall/upgrade anyway?"; then
-            log_info "Skipping Antigravity CLI installation."
-            return 0
-        fi
-    else
-        if ! confirm "Install Antigravity CLI (agy)?"; then
-            log_info "Skipping Antigravity CLI installation."
-            return 0
-        fi
     fi
 
     # Detect Architecture (map uname -m to amd64 / arm64)

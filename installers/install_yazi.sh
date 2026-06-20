@@ -65,15 +65,7 @@ install_yazi() {
     if [ "$distro" = "arch" ]; then
         log_info "Arch Linux detected"
         if has_command yazi; then
-            if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
-        else
-            if ! confirm "Install Yazi and its dependencies?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
+            log_info "Yazi is already installed."
         fi
 
         log_info "Installing Yazi..."
@@ -84,15 +76,7 @@ install_yazi() {
     elif [ "$distro" = "debian" ]; then
         log_info "Debian/Ubuntu detected"
         if has_command yazi; then
-            if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
-        else
-            if ! confirm "Install Yazi and its dependencies?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
+            log_info "Yazi is already installed."
         fi
 
         pkg_install curl wget git
@@ -124,15 +108,7 @@ install_yazi() {
     elif [ "$distro" = "fedora" ]; then
         log_info "Fedora detected"
         if has_command yazi; then
-            if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
-        else
-            if ! confirm "Install Yazi and its dependencies?"; then
-                log_info "Skipping Yazi installation."
-                return
-            fi
+            log_info "Yazi is already installed."
         fi
 
         log_info "Installing dnf-plugins-core..."

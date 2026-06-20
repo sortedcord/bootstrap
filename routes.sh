@@ -31,6 +31,96 @@ declare -A INSTALLERS=(
 # Order in which installers should be displayed
 INSTALLER_KEYS=(agy bat node nvim pnpm rust starship yay yazi zoxide)
 
+# Helper function to run/edit installer scripts
+run_ware() {
+    local tool="$1"
+    shift
+    
+    # Check if -y is in the remaining arguments
+    local bypass_edit=false
+    local cmd_args=()
+    for arg in "$@"; do
+        if [ "$arg" = "-y" ]; then
+            bypass_edit=true
+        else
+            cmd_args+=("$arg")
+        fi
+    done
+
+    # Capitalize first letter for display (e.g. nvim -> Neovim)
+    local display_name="$(echo "${tool:0:1}" | tr '[:lower:]' '[:upper:]')${tool:1}"
+    
+    # Check for local installer first
+    local local_installer="$BOOTSTRAP_DIR/installers/install_${tool}.sh"
+    local temp_script
+    temp_script=$(mktemp --suffix=".sh" 2>/dev/null || mktemp)
+
+    if [ -f "$local_installer" ]; then
+        cp "$local_installer" "$temp_script"
+    else
+        BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
+        BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
+        local installer_path="installers/install_${tool}.sh"
+        local download_status=0
+
+        log_info "Downloading ${display_name} installer..."
+        if has_command curl; then
+            curl -fsSL "${BOOTSTRAP_BASE_URL}/${installer_path}" -o "$temp_script"
+            download_status=$?
+            if [ "$download_status" -ne 0 ]; then
+                log_warn "Failed to download installer from primary URL, trying fallback..."
+                curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" -o "$temp_script"
+                download_status=$?
+            fi
+        elif has_command wget; then
+            wget -qO "$temp_script" "${BOOTSTRAP_BASE_URL}/${installer_path}"
+            download_status=$?
+            if [ "$download_status" -ne 0 ]; then
+                log_warn "Failed to download installer from primary URL, trying fallback..."
+                wget -qO "$temp_script" "${BOOTSTRAP_FALLBACK_URL}/${installer_path}"
+                download_status=$?
+            fi
+        else
+            log_error "Neither curl nor wget is installed to download the installer."
+            rm -f "$temp_script"
+            exit 1
+        fi
+
+        if [ "$download_status" -ne 0 ]; then
+            log_error "Failed to download the installer from both primary and fallback URLs."
+            rm -f "$temp_script"
+            exit 1
+        fi
+    fi
+
+    # Edit if bypass_edit is false
+    if [ "$bypass_edit" = "false" ]; then
+        local editor="${EDITOR:-}"
+        if [ -z "$editor" ]; then
+            if has_command nvim; then
+                editor="nvim"
+            elif has_command vim; then
+                editor="vim"
+            elif has_command nano; then
+                editor="nano"
+            else
+                editor="vi"
+            fi
+        fi
+        log_info "Opening ${display_name} installer for editing using $editor..."
+        $editor "$temp_script"
+    fi
+
+    # Run the script (edited or unchanged)
+    log_info "Running ${display_name} installer..."
+    bash "$temp_script" "${cmd_args[@]}"
+    local run_status=$?
+    
+    # Cleanup
+    rm -f "$temp_script"
+    return "$run_status"
+}
+
 SCRIPT_NAMES="${1:-}"
 if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
     SCRIPT_NAMES="all"
@@ -47,46 +137,7 @@ IFS=',' read -ra SCRIPTS <<< "$SCRIPT_NAMES"
 for script in "${SCRIPTS[@]}"; do
     # Check if it is a registered installer
     if [[ -n "${INSTALLERS[$script]:-}" ]]; then
-        # Capitalize first letter for display (e.g. nvim -> Neovim)
-        display_name="$(echo "${script:0:1}" | tr '[:lower:]' '[:upper:]')${script:1}"
-        log_info "Launching ${display_name} installer..."
-        
-        # Check for local installer first, fallback to curl
-        local_installer="$BOOTSTRAP_DIR/installers/install_${script}.sh"
-        if [ -f "$local_installer" ]; then
-            bash "$local_installer" "$@"
-        else
-            BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
-            BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
-            installer_path="installers/install_${script}.sh"
-            download_status=0
-
-            if has_command curl; then
-                curl -fsSL "${BOOTSTRAP_BASE_URL}/${installer_path}" | bash -s -- "$@"
-                download_status="${PIPESTATUS[0]}"
-                if [ "$download_status" -ne 0 ]; then
-                    log_warn "Failed to download installer from primary URL, trying fallback..."
-                    curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" | bash -s -- "$@"
-                    download_status="${PIPESTATUS[0]}"
-                fi
-            elif has_command wget; then
-                wget -qO- "${BOOTSTRAP_BASE_URL}/${installer_path}" | bash -s -- "$@"
-                download_status="${PIPESTATUS[0]}"
-                if [ "$download_status" -ne 0 ]; then
-                    log_warn "Failed to download installer from primary URL, trying fallback..."
-                    wget -qO- "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" | bash -s -- "$@"
-                    download_status="${PIPESTATUS[0]}"
-                fi
-            else
-                log_error "Neither curl nor wget is installed to download the installer."
-                exit 1
-            fi
-
-            if [ "$download_status" -ne 0 ]; then
-                log_error "Failed to download the installer from both primary and fallback URLs."
-                exit 1
-            fi
-        fi
+        run_ware "$script" -y "$@"
 
     else
         # Handle non-installer commands
@@ -114,6 +165,24 @@ for script in "${SCRIPTS[@]}"; do
                     log_error "Update command script not found."
                     exit 1
                 fi
+                ;;
+            ware)
+                tools_arg="${1:-}"
+                if [ -z "$tools_arg" ]; then
+                    log_error "Usage: b ware <tool1,tool2,...> [-y]"
+                    exit 1
+                fi
+                shift
+                IFS=',' read -ra WARE_TOOLS <<< "$tools_arg"
+                for tool in "${WARE_TOOLS[@]}"; do
+                    if [[ -z "${INSTALLERS[$tool]:-}" ]]; then
+                        log_error "Unknown tool '$tool'."
+                        exit 1
+                    fi
+                done
+                for tool in "${WARE_TOOLS[@]}"; do
+                    run_ware "$tool" "$@"
+                done
                 ;;
             bye)
                 if [ -f "$BOOTSTRAP_DIR/commands/uninstall.sh" ]; then

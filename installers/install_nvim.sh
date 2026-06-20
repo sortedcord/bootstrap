@@ -35,27 +35,8 @@ cleanup() {
 trap cleanup EXIT
 
 check_config_dir() {
-    if [[ -d "$NVIM_CONFIG_DIR" ]]; then
-        if confirm "$NVIM_CONFIG_DIR already exists. Replace it?"; then
-            log_info "Existing configuration will be removed during setup."
-            rm -rf "$NVIM_CONFIG_DIR"
-        else
-            while true; do
-                read -r -p "Enter an alternative directory to clone the configuration into: " alt_dir </dev/tty || true
-                
-                # Expand tilde (~) to $HOME if the user uses it
-                alt_dir="${alt_dir/#\~/$HOME}"
-
-                if [[ -z "$alt_dir" ]]; then
-                    log_warn "Directory path cannot be empty. Please try again."
-                    continue
-                fi
-
-                NVIM_CONFIG_DIR="$alt_dir"
-                break
-            done
-        fi
-    fi
+    # Skip prompt, handled during config clone
+    return 0
 }
 
 install_packages() {
@@ -85,19 +66,9 @@ install_nvim() {
             return
         fi
 
-        log_info "Detected Neovim ${current_version}"
-
-        if ! confirm "Upgrade to Neovim v${NVIM_VERSION}?"; then
-            log_info "Skipping Neovim upgrade."
-            return
-        fi
+        log_info "Detected Neovim ${current_version}. Upgrading to v${NVIM_VERSION}..."
     else
-        log_info "Neovim not installed."
-
-        if ! confirm "Install Neovim v${NVIM_VERSION}?"; then
-            log_info "Skipping Neovim installation."
-            return
-        fi
+        log_info "Installing Neovim v${NVIM_VERSION}..."
     fi
 
     # Detect architecture to resolve the release binary name (Fix 4)
@@ -131,13 +102,13 @@ install_nvim() {
 }
 
 install_config() {
+    if [[ -d "$NVIM_CONFIG_DIR" ]]; then
+        log_info "Neovim configuration directory $NVIM_CONFIG_DIR already exists. Skipping config clone."
+        return
+    fi
+
     # Ensure parent directory for the chosen config path exists
     mkdir -p "$(dirname "$NVIM_CONFIG_DIR")"
-
-    # Quick check if the alternative folder exists and clear it out
-    if [[ -d "$NVIM_CONFIG_DIR" ]]; then
-        rm -rf "$NVIM_CONFIG_DIR"
-    fi
 
     log_info "Cloning configuration to $NVIM_CONFIG_DIR..."
     git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG_DIR"

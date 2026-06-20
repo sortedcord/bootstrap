@@ -125,15 +125,7 @@ detect_pnpm_arch() {
 
 install_pnpm() {
     if has_command pnpm; then
-        if ! confirm "pnpm is already installed ($(pnpm --version)). Reinstall/Upgrade?"; then
-            log_info "Skipping pnpm installation."
-            return
-        fi
-    else
-        if ! confirm "Install pnpm?"; then
-            log_info "Skipping pnpm installation."
-            return
-        fi
+        log_info "pnpm is already installed ($(pnpm --version))."
     fi
 
     local arch libc_suffix version_json version major_version asset_base

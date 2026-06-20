@@ -42,15 +42,7 @@ install_fzf() {
 
 install_zoxide() {
     if has_command zoxide || [ -f "$HOME/.local/bin/zoxide" ]; then
-        if ! confirm "Zoxide is already installed. Reinstall/Upgrade?"; then
-            log_info "Skipping Zoxide installation."
-            return
-        fi
-    else
-        if ! confirm "Install Zoxide?"; then
-            log_info "Skipping Zoxide installation."
-            return
-        fi
+        log_info "Zoxide is already installed."
     fi
 
     install_curl

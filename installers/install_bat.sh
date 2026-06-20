@@ -35,51 +35,16 @@ install_bat() {
 
     if [ "$distro" = "arch" ]; then
         log_info "Arch Linux detected"
-        if has_command bat; then
-            if ! confirm "Bat is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        else
-            if ! confirm "Install Bat?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        fi
-
         log_info "Installing Bat..."
         pkg_install bat
 
     elif [ "$distro" = "fedora" ]; then
         log_info "Fedora detected"
-        if has_command bat; then
-            if ! confirm "Bat is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        else
-            if ! confirm "Install Bat?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        fi
-
         log_info "Installing Bat..."
         pkg_install bat
 
     elif [ "$distro" = "debian" ]; then
         log_info "Debian/Ubuntu detected"
-        if has_command bat; then
-            if ! confirm "Bat is already installed. Reinstall/Upgrade?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        else
-            if ! confirm "Install Bat?"; then
-                log_info "Skipping Bat installation."
-                return
-            fi
-        fi
 
         pkg_install curl wget
 

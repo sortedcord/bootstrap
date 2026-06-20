@@ -65,15 +65,7 @@ detect_target_triple() {
 
 install_rust() {
     if has_command rustup || [ -f "$HOME/.cargo/bin/rustup" ]; then
-        if ! confirm "Rust (rustup) is already installed. Reinstall/Upgrade?"; then
-            log_info "Skipping Rust installation."
-            return
-        fi
-    else
-        if ! confirm "Install Rust (rustup)?"; then
-            log_info "Skipping Rust installation."
-            return
-        fi
+        log_info "Rust (rustup) is already installed."
     fi
 
     install_downloader

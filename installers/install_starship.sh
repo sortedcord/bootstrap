@@ -31,15 +31,7 @@ trap cleanup EXIT
 
 install_starship() {
     if has_command starship || [ -f "$HOME/.local/bin/starship" ]; then
-        if ! confirm "Starship is already installed. Reinstall/Upgrade?"; then
-            log_info "Skipping Starship installation."
-            return
-        fi
-    else
-        if ! confirm "Install Starship?"; then
-            log_info "Skipping Starship installation."
-            return
-        fi
+        log_info "Starship is already installed."
     fi
 
     # Ensure curl or wget is installed
