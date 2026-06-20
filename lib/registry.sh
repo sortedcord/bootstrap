@@ -8,6 +8,7 @@ declare -A INSTALLERS=(
     [pnpm]="Install pnpm package manager"
     [rust]="Install Rustup and Rust compiler/toolchain"
     [starship]="Install Starship shell prompt"
+    [uv]="Fast Python package installer and resolver"
     [yay]="Install Yay AUR helper"
     [yazi]="Install Yazi terminal file manager and dependencies"
     [zoxide]="Install Zoxide directory jumper"
@@ -21,9 +22,10 @@ declare -A INSTALLER_DISPLAYS=(
     [pnpm]="Pnpm"
     [rust]="Rust"
     [starship]="Starship"
+    [uv]="uv"
     [yay]="Yay"
     [yazi]="Yazi"
     [zoxide]="Zoxide"
 )
 
-INSTALLER_KEYS=(agy bat node nvim pnpm rust starship yay yazi zoxide)
+INSTALLER_KEYS=(agy bat node nvim pnpm rust starship uv yay yazi zoxide)

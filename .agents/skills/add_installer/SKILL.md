@@ -38,6 +38,12 @@ When adding a new installer named `<name>`:
 
 Create `installers/install_<name>.sh` using the template below.
 
+If the user provides an official install or curl script in the prompt:
+- Read and analyze the script.
+- Remove redundant parts like macOS and Windows compatibility.
+- Strip unnecessary shell boilerplate, self-update logic, and other bloat.
+- Implement only the essential Linux installation logic inside the `install_<name>` function.
+
 ### Step 2: Add metadata comments to the top of your installer script
 
 At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following three metadata headers:
@@ -262,3 +268,4 @@ inject_block "$config_file" "<tool> init" 'eval "$(tool init bash)"'
 6. **Error handling**: Use `set -euo pipefail` after sourcing `bootstrap.sh`.
 7. **Metascript boilerplate**: The first 22 lines of every installer are identical — always copy them verbatim.
 8. **`main "$@"`**: Always end with this pattern to pass through CLI arguments.
+9. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.

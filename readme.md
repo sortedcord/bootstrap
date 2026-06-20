@@ -19,6 +19,7 @@ Here is a comparison of the size and complexity of using Bootstrap (`to b`) vers
 | **PNPM (`pnpm`)** | 245 lines | 213 lines (Official get.pnpm.io script) |
 | **Rust (`rust`)** | 155 lines | 921 lines (Official sh.rustup.rs script) |
 | **Starship (`starship`)** | 132 lines | 554 lines (Official starship.rs script) |
+| **uv (`uv`)** | 139 lines | 2184 lines (Official uv install script) |
 | **Yay (`yay`)** | 96 lines | N/A (Official manual build process) |
 | **Yazi (`yazi`)** | 163 lines | N/A (Standard package install) |
 | **Zoxide (`zoxide`)** | 90 lines | 466 lines (Official zoxide install script) |
@@ -33,12 +34,10 @@ To bootstrap a new machine and set up the `b` command tool, run the following:
 curl -fsSL https://adityagupta.dev/b | bash
 ```
 
-Once bootstrapped, you can run any installer script using the `b` command followed by its shortcut name. You can also chain multiple installations by separating their names with a comma:
+Once bootstrapped, you list all commands available -
 
 ```bash
-b nvim
-b yazi
-b nvim,yazi
+b all
 ```
 
 ### Inspecting and Editing Installers (`b ware`)
@@ -56,6 +55,8 @@ To bypass the editor and install the tool directly using the `ware` command, app
 
 ```bash
 b ware nvim -y
+# or directly:
+b nvim
 ```
 
 To list all available installer tools and their descriptions, run the `ware` (or `bware`) command without any arguments:
@@ -64,6 +65,8 @@ To list all available installer tools and their descriptions, run the `ware` (or
 b ware
 ```
 
+### Editing Configurations (`b con`)
+
 You can also edit configurations located in your `~/.config/` directory by running:
 
 ```bash
@@ -71,7 +74,9 @@ b con nvim
 b con i3
 ```
 
-It automatically fuzzy-finds the folder in case there is no exact match.
+It automatically fuzzy-finds the folder in case there is no exact match. Also, in case there is only a singular config file in that folder, then it will directly open that file.
+
+### Updating
 
 To check for updates and update the tool manually:
 
@@ -115,6 +120,7 @@ The scripts are intentionally straightforward Bash scripts that can be inspected
 
 Potential additions include:
 
+* RSA based authentication
 * Development environment bootstrap
 * Workstation setup
 * Server provisioning
@@ -141,6 +147,10 @@ curl -fsSL https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/li
 ```
 
 and review the contents before piping it into a shell.
+
+## Should I Use It?
+
+Hell no, go make your own.
 
 ## License
 
