@@ -283,7 +283,7 @@ EOF
             printf "%s\033[1m%s\033[0m\n" "$_version_padding" "$_version_str"
             echo
             
-            # Display centered aqua blue progress bar
+            # Display centered aqua blue progress bar (non-blocking)
             _bar_width=40
             _bar_padding_width=$(( (_cols - (_bar_width + 6)) / 2 ))
             _bar_padding=""
@@ -297,19 +297,35 @@ EOF
             # Hide cursor
             printf "\033[?25l"
             
-            for i in $(seq 1 40); do
-                _filled_part="${_filled_all:0:i}"
-                _empty_part="${_empty_all:i}"
-                _pct=$(( i * 100 / 40 ))
-                printf "\r%s\033[38;2;0;210;255m%s\033[90m%s\033[0m %3d%%" "$_bar_padding" "$_filled_part" "$_empty_part" "$_pct"
-                sleep 0.05
-            done
+            # Launch progress bar in background
+            (
+                for i in $(seq 1 40); do
+                    _filled_part="${_filled_all:0:i}"
+                    _empty_part="${_empty_all:i}"
+                    _pct=$(( i * 100 / 40 ))
+                    printf "\r%s\033[38;2;0;210;255m%s\033[90m%s\033[0m %3d%%" "$_bar_padding" "$_filled_part" "$_empty_part" "$_pct"
+                    sleep 0.05
+                done
+            ) &
+            _bar_pid=$!
+            
+            # Run installation concurrently
+            install_bootstrap
+            
+            # Wait for the progress bar to finish
+            wait "$_bar_pid" 2>/dev/null
+            
+            # Snap to 100% in case install finished before the bar
+            printf "\r%s\033[38;2;0;210;255m%s\033[0m %3d%%" "$_bar_padding" "$_filled_all" 100
             
             # Restore cursor and print newline
             printf "\033[?25h\n\n"
+            _bootstrap_installed=true
         fi
     fi
-    install_bootstrap
+    if [ "${_bootstrap_installed:-false}" != true ]; then
+        install_bootstrap
+    fi
 
     # Load the b function immediately in the current subshell
     if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
