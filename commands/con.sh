@@ -34,7 +34,13 @@ if [ -n "$config_dir" ] && [ -d "$config_dir" ]; then
         if [ $# -gt 0 ]; then
             "$editor" "$@"
         else
-            "$editor" .
+            # Check if there is exactly one file in the config directory
+            files=( * )
+            if [ ${#files[@]} -eq 1 ] && [ -f "${files[0]}" ]; then
+                "$editor" "${files[0]}"
+            else
+                "$editor" .
+            fi
         fi
     )
 else
