@@ -17,12 +17,13 @@ require_bash
 
 # Registry of installers
 declare -A INSTALLERS=(
+    [node]="Install Node.js (LTS) and NVM"
     [nvim]="Install Neovim 0.11.7 and configuration"
     [yazi]="Install Yazi terminal file manager and dependencies"
     [zoxide]="Install Zoxide directory jumper"
 )
 # Order in which installers should be displayed
-INSTALLER_KEYS=(nvim yazi zoxide)
+INSTALLER_KEYS=(node nvim yazi zoxide)
 
 SCRIPT_NAMES="${1:-}"
 if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
