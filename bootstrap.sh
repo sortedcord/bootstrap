@@ -297,6 +297,9 @@ EOF
             # Hide cursor
             printf "\033[?25l"
             
+            # Capture install output to a temp file so logs don't bleed into the bar
+            _install_log=$(mktemp)
+            
             # Launch progress bar in background
             (
                 for i in $(seq 1 40); do
@@ -309,8 +312,8 @@ EOF
             ) &
             _bar_pid=$!
             
-            # Run installation concurrently
-            install_bootstrap
+            # Run installation concurrently, silencing all output to the log file
+            install_bootstrap >"$_install_log" 2>&1
             
             # Wait for the progress bar to finish
             wait "$_bar_pid" 2>/dev/null
@@ -318,8 +321,11 @@ EOF
             # Snap to 100% in case install finished before the bar
             printf "\r%s\033[38;2;0;210;255m%s\033[0m %3d%%" "$_bar_padding" "$_filled_all" 100
             
-            # Restore cursor and print newline
-            printf "\033[?25h\n\n"
+            # Restore cursor, clear screen, then replay captured install logs
+            printf "\033[?25h\n"
+            clear 2>/dev/null || true
+            cat "$_install_log"
+            rm -f "$_install_log"
             _bootstrap_installed=true
         fi
     fi
