@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Rust Installer Script
+# Rust Installer Script (Simplified Local Rustup Init)
 #
 
 # Run metascript to check if the shell is bash and load libraries
@@ -23,11 +23,44 @@ fi
 
 set -euo pipefail
 
-install_curl() {
-    if ! has_command curl; then
-        log_info "curl not found. Installing curl..."
+# Ensure we have curl or wget
+install_downloader() {
+    if ! has_command curl && ! has_command wget; then
+        log_info "Neither curl nor wget found. Installing curl..."
         pkg_install curl
     fi
+}
+
+detect_target_triple() {
+    local ostype
+    ostype="$(uname -s)"
+    if [ "$ostype" != "Linux" ]; then
+        log_error "This simplified installer only supports Linux."
+        exit 1
+    fi
+
+    local clibtype="gnu"
+    if ldd --version 2>&1 | grep -q 'musl'; then
+        clibtype="musl"
+    fi
+
+    local raw_arch
+    raw_arch="$(uname -m)"
+    local cputype
+    case "$raw_arch" in
+        x86_64)               cputype="x86_64" ;;
+        aarch64|arm64)        cputype="aarch64" ;;
+        armv7l|armv8l|armv7)  cputype="armv7" ;;
+        i386|i486|i686|x86)   cputype="i686" ;;
+        *)                    cputype="$raw_arch" ;;
+    esac
+
+    local target="${cputype}-unknown-linux-${clibtype}"
+    if [ "$cputype" = "armv7" ]; then
+        target="${cputype}-unknown-linux-gnueabihf"
+    fi
+
+    echo "$target"
 }
 
 install_rust() {
@@ -43,13 +76,53 @@ install_rust() {
         fi
     fi
 
-    install_curl
+    install_downloader
 
-    log_info "Downloading and running the official rustup installer..."
-    # The -s -- -y flag runs the rustup installer non-interactively, accepting defaults.
-    # --no-modify-path prevents the installer from modifying the shell startup files,
-    # as we handle this cleanly ourselves using bootstrap's configure_shell.
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --no-modify-path
+    local target
+    target=$(detect_target_triple)
+    log_info "Detected target triple: $target"
+
+    local url="https://static.rust-lang.org/rustup/dist/${target}/rustup-init"
+    
+    local tmpdir
+    tmpdir="$(make_temp_dir)"
+    cleanup() {
+        rm -rf "$tmpdir"
+    }
+    trap cleanup EXIT
+
+    local dest="$tmpdir/rustup-init"
+
+    log_info "Downloading rustup-init..."
+    # Check for snap curl issue (snap curl cannot write to /tmp/ due to sandbox)
+    local use_wget=false
+    if has_command curl; then
+        local curl_path
+        curl_path=$(command -v curl)
+        if echo "$curl_path" | grep -q "/snap/"; then
+            if has_command wget; then
+                use_wget=true
+            else
+                log_warn "curl is installed via snap and may fail to write to temp directory."
+            fi
+        fi
+    else
+        use_wget=true
+    fi
+
+    if [ "$use_wget" = true ]; then
+        wget -qO "$dest" "$url"
+    else
+        curl -fsSL "$url" -o "$dest"
+    fi
+
+    chmod +x "$dest"
+
+    log_info "Running rustup-init..."
+    # Run the downloaded binary
+    # -y: skip prompts (we already confirmed)
+    # --no-modify-path: let bootstrap manage the shell paths
+    "$dest" -y --no-modify-path
 }
 
 configure_shell() {
