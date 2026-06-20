@@ -22,13 +22,14 @@ declare -A INSTALLERS=(
     [node]="Install Node.js (LTS) and NVM"
     [nvim]="Install Neovim 0.11.7 and configuration"
     [pnpm]="Install pnpm package manager"
+    [rust]="Install Rustup and Rust compiler/toolchain"
     [starship]="Install Starship shell prompt"
     [yay]="Install Yay AUR helper"
     [yazi]="Install Yazi terminal file manager and dependencies"
     [zoxide]="Install Zoxide directory jumper"
 )
 # Order in which installers should be displayed
-INSTALLER_KEYS=(agy bat node nvim pnpm starship yay yazi zoxide)
+INSTALLER_KEYS=(agy bat node nvim pnpm rust starship yay yazi zoxide)
 
 SCRIPT_NAMES="${1:-}"
 if [ -z "$SCRIPT_NAMES" ] || [ "$SCRIPT_NAMES" = "-h" ] || [ "$SCRIPT_NAMES" = "--help" ]; then
