@@ -66,14 +66,8 @@ configure_shell() {
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
 
     for config_file in "${target_files[@]}"; do
-        local shell_name="bash"
-        if [[ "$config_file" == *".zshrc" ]]; then
-            shell_name="zsh"
-        fi
-
         log_info "Adding zoxide initialization to $config_file..."
-        local content
-        content="eval \"\$(zoxide init --cmd cd $shell_name)\""
+        local content="eval \"\$(zoxide init --cmd cd bash)\""
         
         inject_block "$config_file" "zoxide init" "$content"
 

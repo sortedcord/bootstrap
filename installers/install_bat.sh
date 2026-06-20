@@ -149,7 +149,7 @@ main() {
 
     echo
     log_success "Bat installation and configuration complete."
-    log_info "Please close and reopen your terminal or run: source ~/.bashrc (or source ~/.zshrc) to apply changes."
+    log_info "Please close and reopen your terminal or run: source ~/.bashrc to apply changes."
 }
 
 main "$@"

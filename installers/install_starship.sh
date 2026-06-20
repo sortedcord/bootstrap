@@ -102,32 +102,23 @@ configure_shell() {
     # Add ~/.local/bin to PATH for the current process
     export PATH="$HOME/.local/bin:$PATH"
 
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-
-    for config_file in "${target_files[@]}"; do
-        local shell_name="bash"
-        if [[ "$config_file" == *".zshrc" ]]; then
-            shell_name="zsh"
-        fi
-
+    local config_file="$HOME/.bashrc"
+    if [ -f "$config_file" ]; then
         # Ensure ~/.local/bin is in PATH for this file if not already present
-        if [ -f "$config_file" ] && ! grep -q '\.local/bin' "$config_file" 2>/dev/null; then
+        if ! grep -q '\.local/bin' "$config_file" 2>/dev/null; then
             log_info "Adding ~/.local/bin to PATH in $config_file..."
             local path_content='export PATH="$HOME/.local/bin:$PATH"'
             inject_block "$config_file" "local-bin path" "$path_content"
         fi
 
         log_info "Adding starship initialization to $config_file..."
-        local content
-        content="eval \"\$(starship init $shell_name)\""
+        local content='eval "$(starship init bash)"'
         
         inject_block "$config_file" "starship init" "$content"
 
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            . "$config_file" 2>/dev/null || true
-        fi
-    done
+        # Source to apply changes in the current context
+        . "$config_file" 2>/dev/null || true
+    fi
 }
 
 main() {

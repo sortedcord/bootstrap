@@ -178,7 +178,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 
 | Function | Description |
 |---|---|
-| `get_shell_configs` | Space-separated list of existing RC files (`~/.bashrc`, `~/.zshrc`) |
+| `get_shell_configs` | Space-separated list of existing RC files (`~/.bashrc`) |
 | `inject_block <file> <name> <content>` | Idempotently inject a named block into a config file (removes old block first) |
 | `remove_block <file> <name>` | Remove a named block from a config file |
 | `add_alias_if_missing <file> <alias> <value>` | Add an alias line if not already present |

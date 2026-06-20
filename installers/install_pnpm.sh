@@ -238,7 +238,7 @@ main() {
         log_info "Installed pnpm version: $(pnpm --version 2>/dev/null || echo 'unknown')"
     else
         log_success "Installation complete."
-        log_info "Please close and reopen your terminal or run: source ~/.bashrc (or source ~/.zshrc) to verify."
+        log_info "Please close and reopen your terminal or run: source ~/.bashrc to verify."
     fi
 }
 

@@ -16,7 +16,6 @@ fi
 get_shell_configs() {
     local target_files=()
     [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-    [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
     echo "${target_files[@]}"
 }
 

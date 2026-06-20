@@ -81,7 +81,6 @@ fi
 install_bootstrap() {
     local target_files=()
     [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
-    [ -f "$HOME/.zshrc" ] && target_files+=("$HOME/.zshrc")
 
     local routes_dir="$HOME/.config/bootstrap"
     mkdir -p "$routes_dir"
@@ -208,11 +207,7 @@ if [ "$is_sourced" = false ]; then
     echo
     log_success "Bootstrap CLI installed successfully!"
     log_info "To start using the 'b' command in this terminal session, run:"
-    if [ -f "$HOME/.zshrc" ]; then
-        echo "  source ~/.zshrc"
-    else
-        echo "  source ~/.bashrc"
-    fi
+    echo "  source ~/.bashrc"
 else
     # Sourced mode (e.g., when sourced by installers or manually by user)
     # Load the b function in the current shell context
