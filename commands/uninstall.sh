@@ -18,7 +18,33 @@ for config_file in "${target_files[@]}"; do
     
     # Remove old embedded b function block
     remove_block "$config_file" "bootstrap-cli b function"
+
+    # Remove bash_aliases setup block if present
+    remove_block "$config_file" "bootstrap-cli bash_aliases setup"
 done
+
+# Clean up bootstrap-specific aliases from ~/.bash_aliases if the file exists
+if [ -f "$HOME/.bash_aliases" ]; then
+    log_info "Cleaning up bootstrap aliases from ~/.bash_aliases..."
+    
+    # 1. Remove the 'bat alias' block if it was injected there
+    remove_block "$HOME/.bash_aliases" "bat alias"
+    
+    # 2. Remove specific aliases added by bootstrap (e.g. vim -> nvim)
+    if grep -q '^alias vim="nvim"$' "$HOME/.bash_aliases" 2>/dev/null; then
+        local tmp_file
+        tmp_file=$(mktemp)
+        sed '/^alias vim="nvim"$/d' "$HOME/.bash_aliases" > "$tmp_file"
+        cat "$tmp_file" > "$HOME/.bash_aliases"
+        rm -f "$tmp_file"
+    fi
+    
+    # Remove ~/.bash_aliases entirely if it is empty (size 0) after our cleanup
+    if [ ! -s "$HOME/.bash_aliases" ]; then
+        log_info "Removing empty ~/.bash_aliases..."
+        rm -f "$HOME/.bash_aliases"
+    fi
+fi
 
 # Remove the installation directory
 rm -rf "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"

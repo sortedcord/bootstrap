@@ -100,8 +100,19 @@ configure_shell() {
     local content="alias cat='bat --paging=never -p'"
 
     for config_file in "${target_files[@]}"; do
-        log_info "Adding bat alias to $config_file..."
-        inject_block "$config_file" "bat alias" "$content"
+        local target_file="$config_file"
+        if [ "$config_file" = "$HOME/.bashrc" ]; then
+            # Clean up old block from ~/.bashrc if present to avoid duplication
+            remove_block "$config_file" "bat alias"
+            target_file="$HOME/.bash_aliases"
+            # Ensure the file exists
+            if [ ! -f "$target_file" ]; then
+                touch "$target_file"
+            fi
+        fi
+
+        log_info "Adding bat alias to $target_file..."
+        inject_block "$target_file" "bat alias" "$content"
         
         # Source if modified (only for bashrc)
         if [ "$config_file" = "$HOME/.bashrc" ]; then

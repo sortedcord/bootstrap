@@ -61,12 +61,30 @@ add_alias_if_missing() {
     local name="$2"
     local val="$3"
 
-    if [ -f "$config_file" ] && ! grep -q "alias $name=" "$config_file" 2>/dev/null; then
-        log_info "Adding alias $name to $config_file"
-        echo "alias ${name}=\"${val}\"" >> "$config_file"
+    local target_file="$config_file"
+    if [ "$config_file" = "$HOME/.bashrc" ]; then
+        # Migrate existing alias from ~/.bashrc if present to avoid duplicates/shadowing
+        if [ -f "$HOME/.bashrc" ] && grep -q "alias ${name}=" "$HOME/.bashrc" 2>/dev/null; then
+            log_info "Migrating alias $name from ~/.bashrc to ~/.bash_aliases"
+            local tmp_file
+            tmp_file=$(mktemp)
+            sed "/^alias ${name}=/d" "$HOME/.bashrc" > "$tmp_file"
+            cat "$tmp_file" > "$HOME/.bashrc"
+            rm -f "$tmp_file"
+        fi
+        target_file="$HOME/.bash_aliases"
+    fi
+
+    if [ ! -f "$target_file" ]; then
+        touch "$target_file"
+    fi
+
+    if ! grep -q "alias $name=" "$target_file" 2>/dev/null; then
+        log_info "Adding alias $name to $target_file"
+        echo "alias ${name}=\"${val}\"" >> "$target_file"
         return 0 # Added
     fi
-    return 1 # Not added (already existed or file doesn't exist)
+    return 1 # Not added (already existed)
 }
 
 # Add environment variable if not present

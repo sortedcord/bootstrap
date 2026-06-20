@@ -160,6 +160,12 @@ install_bootstrap() {
         fi
     fi
 
+    # Create ~/.bash_aliases if it doesn't exist
+    if [ ! -f "$HOME/.bash_aliases" ]; then
+        log_info "Creating ~/.bash_aliases..."
+        touch "$HOME/.bash_aliases"
+    fi
+
     # Set up shell configuration files
     for config_file in "${target_files[@]}"; do
         # 1. Clean up old embedded function block if it exists (from previous setup)
@@ -177,6 +183,21 @@ export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
 # <<< bootstrap-cli setup <<<
 EOF
+
+        # 4. Ensure ~/.bash_aliases is sourced in ~/.bashrc if not already
+        if [ "$config_file" = "$HOME/.bashrc" ]; then
+            if ! grep -q "bash_aliases" "$config_file" 2>/dev/null; then
+                local alias_source_content
+                alias_source_content=$(cat << 'EOF'
+# Source aliases file if it exists
+if [ -f "$HOME/.bash_aliases" ]; then
+    . "$HOME/.bash_aliases"
+fi
+EOF
+)
+                inject_block "$config_file" "bootstrap-cli bash_aliases setup" "$alias_source_content"
+            fi
+        fi
     done
 
     # Initialize the last update timestamp to prevent immediate update on first execution (Fix 2)
