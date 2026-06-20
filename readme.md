@@ -9,6 +9,7 @@ The goal is simple: reduce the number of manual steps required after installing 
 | Script            | Description                                                           |
 | ----------------- | --------------------------------------------------------------------- |
 | `install_agy.sh`  | Installs Antigravity CLI and triggers native shell configuration.     |
+| `install_bat.sh`  | Installs Bat (alternative to cat) and configures alias.               |
 | `install_node.sh` | Installs Node.js (LTS) and NVM (Node Version Manager).                 |
 | `install_nvim.sh` | Installs Neovim 0.11.7 and clones my Neovim configuration repository. |
 | `install_yazi.sh` | Installs Yazi terminal file manager and its dependencies.             |
