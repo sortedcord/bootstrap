@@ -129,7 +129,7 @@ install_bat() {
 configure_shell() {
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
 
-    local content="alias cat='bat --paging=never'"
+    local content="alias cat='bat --paging=never -p'"
 
     for config_file in "${target_files[@]}"; do
         log_info "Adding bat alias to $config_file..."
