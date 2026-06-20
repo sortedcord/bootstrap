@@ -55,12 +55,34 @@ for script in "${SCRIPTS[@]}"; do
         if [ -f "$local_installer" ]; then
             bash "$local_installer" "$@"
         else
+            BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
+            BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
+            installer_path="installers/install_${script}.sh"
+            download_status=0
+
             if has_command curl; then
-                curl -fsSL "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
+                curl -fsSL "${BOOTSTRAP_BASE_URL}/${installer_path}" | bash -s -- "$@"
+                download_status="${PIPESTATUS[0]}"
+                if [ "$download_status" -ne 0 ]; then
+                    log_warn "Failed to download installer from primary URL, trying fallback..."
+                    curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" | bash -s -- "$@"
+                    download_status="${PIPESTATUS[0]}"
+                fi
             elif has_command wget; then
-                wget -qO- "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/installers/install_${script}.sh" | bash -s -- "$@"
+                wget -qO- "${BOOTSTRAP_BASE_URL}/${installer_path}" | bash -s -- "$@"
+                download_status="${PIPESTATUS[0]}"
+                if [ "$download_status" -ne 0 ]; then
+                    log_warn "Failed to download installer from primary URL, trying fallback..."
+                    wget -qO- "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" | bash -s -- "$@"
+                    download_status="${PIPESTATUS[0]}"
+                fi
             else
                 log_error "Neither curl nor wget is installed to download the installer."
+                exit 1
+            fi
+
+            if [ "$download_status" -ne 0 ]; then
+                log_error "Failed to download the installer from both primary and fallback URLs."
                 exit 1
             fi
         fi
