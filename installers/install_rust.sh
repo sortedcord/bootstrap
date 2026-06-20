@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: rust
+# DisplayName: Rust
+# Description: Install Rustup and Rust compiler/toolchain
 #
 # Rust Installer Script (Simplified Local Rustup Init)
 #

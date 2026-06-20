@@ -77,16 +77,23 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all con bye up ware"
+        opts="all con bye up ware bware"
         
-        local routes_file="$HOME/.config/bootstrap/routes.sh"
-        if [ -f "$routes_file" ]; then
-            # Extract installer keys dynamically from the routes.sh file
-            local installer_keys
-            installer_keys=$(grep -E "^INSTALLER_KEYS=" "$routes_file" 2>/dev/null | sed -E 's/INSTALLER_KEYS=\(([^)]+)\)/\1/' 2>/dev/null)
-            if [ -n "$installer_keys" ]; then
-                opts="$opts $installer_keys"
-            fi
+        local routes_dir="$HOME/.config/bootstrap"
+        local installer_keys=""
+        if [ -d "$routes_dir/installers" ]; then
+            for f in "$routes_dir/installers"/install_*.sh; do
+                if [ -f "$f" ]; then
+                    local tool
+                    tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
+                    if [ -n "$tool" ]; then
+                        installer_keys="$installer_keys $tool"
+                    fi
+                fi
+            done
+        fi
+        if [ -n "$installer_keys" ]; then
+            opts="$opts $installer_keys"
         fi
 
         # Support comma-separated completions (e.g. b nvim,ya<TAB>)
@@ -111,12 +118,20 @@ _b_completion() {
         return 0
     fi
 
-    # If completing arguments for 'b ware <tool>'
-    if [ "$COMP_CWORD" -eq 2 ] && [ "$prev" = "ware" ]; then
-        local routes_file="$HOME/.config/bootstrap/routes.sh"
+    # If completing arguments for 'b ware <tool>' or 'b bware <tool>'
+    if [ "$COMP_CWORD" -eq 2 ] && { [ "$prev" = "ware" ] || [ "$prev" = "bware" ]; }; then
+        local routes_dir="$HOME/.config/bootstrap"
         local installer_keys=""
-        if [ -f "$routes_file" ]; then
-            installer_keys=$(grep -E "^INSTALLER_KEYS=" "$routes_file" 2>/dev/null | sed -E 's/INSTALLER_KEYS=\(([^)]+)\)/\1/' 2>/dev/null)
+        if [ -d "$routes_dir/installers" ]; then
+            for f in "$routes_dir/installers"/install_*.sh; do
+                if [ -f "$f" ]; then
+                    local tool
+                    tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
+                    if [ -n "$tool" ]; then
+                        installer_keys="$installer_keys $tool"
+                    fi
+                fi
+            done
         fi
         [ -z "$installer_keys" ] && installer_keys="agy bat node nvim pnpm rust starship yay yazi zoxide"
 

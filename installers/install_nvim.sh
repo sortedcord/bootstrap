@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: nvim
+# DisplayName: Neovim
+# Description: Install Neovim 0.11.7 and configuration
 #
 # Neovim Installer Script
 #

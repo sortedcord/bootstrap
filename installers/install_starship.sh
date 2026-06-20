@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: starship
+# DisplayName: Starship
+# Description: Install Starship shell prompt
 #
 # Starship Installer Script
 #

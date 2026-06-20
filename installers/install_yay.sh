@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: yay
+# DisplayName: Yay
+# Description: Install Yay AUR helper
 #
 # Yay Installer Script
 #

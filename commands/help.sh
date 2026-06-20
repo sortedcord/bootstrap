@@ -9,7 +9,4 @@ printf "  %-6s - %s\n" "up" "Check for updates and update Bootstrap CLI"
 printf "  %-6s - %s\n" "ware" "Edit and run an installer (e.g. b ware nvim)"
 printf "  %-6s - %s\n" "bye" "Uninstall Bootstrap CLI helper"
 
-# Installers second
-for key in "${INSTALLER_KEYS[@]}"; do
-    printf "  %-6s - %s\n" "$key" "${INSTALLERS[$key]}"
-done
+

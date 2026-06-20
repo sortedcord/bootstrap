@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: yazi
+# DisplayName: Yazi
+# Description: Install Yazi terminal file manager and dependencies
 #
 # Yazi Installer Script
 #

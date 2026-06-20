@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: agy
+# DisplayName: Antigravity
+# Description: Install Antigravity CLI
 #
 # Antigravity CLI Installer Script (Linux Only)
 #

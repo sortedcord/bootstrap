@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: zoxide
+# DisplayName: Zoxide
+# Description: Install Zoxide directory jumper
 #
 # Zoxide Installer Script
 #

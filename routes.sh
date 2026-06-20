@@ -15,21 +15,35 @@ fi
 
 require_bash
 
-# Registry of installers
-declare -A INSTALLERS=(
-    [agy]="Install Antigravity CLI"
-    [bat]="Install Bat (alternative to cat) and configure alias"
-    [node]="Install Node.js (LTS) and NVM"
-    [nvim]="Install Neovim 0.11.7 and configuration"
-    [pnpm]="Install pnpm package manager"
-    [rust]="Install Rustup and Rust compiler/toolchain"
-    [starship]="Install Starship shell prompt"
-    [yay]="Install Yay AUR helper"
-    [yazi]="Install Yazi terminal file manager and dependencies"
-    [zoxide]="Install Zoxide directory jumper"
-)
-# Order in which installers should be displayed
-INSTALLER_KEYS=(agy bat node nvim pnpm rust starship yay yazi zoxide)
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
+
+# Source registry
+if [ -f "$_SCRIPT_DIR/registry.sh" ]; then
+    . "$_SCRIPT_DIR/registry.sh"
+elif [ -f "$BOOTSTRAP_DIR/registry.sh" ]; then
+    . "$BOOTSTRAP_DIR/registry.sh"
+else
+    # Standalone/remote fallback: download registry
+    _tmp_registry=$(mktemp)
+    BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
+    BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
+    if has_command curl; then
+        curl -fsSL "${BOOTSTRAP_BASE_URL}/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
+        curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/registry.sh" -o "$_tmp_registry" 2>/dev/null
+    elif has_command wget; then
+        wget -qO "$_tmp_registry" "${BOOTSTRAP_BASE_URL}/registry.sh" 2>/dev/null || \
+        wget -qO "$_tmp_registry" "${BOOTSTRAP_FALLBACK_URL}/registry.sh" 2>/dev/null
+    fi
+    if [ -s "$_tmp_registry" ]; then
+        . "$_tmp_registry"
+    else
+        # Critical fallback
+        declare -A INSTALLERS
+        declare -A INSTALLER_DISPLAYS
+        INSTALLER_KEYS=()
+    fi
+    rm -f "$_tmp_registry"
+fi
 
 # Helper function to run/edit installer scripts
 run_ware() {
@@ -47,8 +61,11 @@ run_ware() {
         fi
     done
 
-    # Capitalize first letter for display (e.g. nvim -> Neovim)
-    local display_name="$(echo "${tool:0:1}" | tr '[:lower:]' '[:upper:]')${tool:1}"
+    # Resolve display name from metadata or fallback
+    local display_name="${INSTALLER_DISPLAYS[$tool]:-}"
+    if [ -z "$display_name" ]; then
+        display_name="$(echo "${tool:0:1}" | tr '[:lower:]' '[:upper:]')${tool:1}"
+    fi
     
     # Check for local installer first
     local local_installer="$BOOTSTRAP_DIR/installers/install_${tool}.sh"
@@ -166,11 +183,14 @@ for script in "${SCRIPTS[@]}"; do
                     exit 1
                 fi
                 ;;
-            ware)
+            ware|bware)
                 tools_arg="${1:-}"
                 if [ -z "$tools_arg" ]; then
-                    log_error "Usage: b ware <tool1,tool2,...> [-y]"
-                    exit 1
+                    echo "Available tools:"
+                    for key in "${INSTALLER_KEYS[@]}"; do
+                        printf "  %-10s - %s\n" "$key" "${INSTALLERS[$key]}"
+                    done
+                    exit 0
                 fi
                 shift
                 IFS=',' read -ra WARE_TOOLS <<< "$tools_arg"

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: pnpm
+# DisplayName: Pnpm
+# Description: Install pnpm package manager
 #
 # pnpm Installer Script
 #

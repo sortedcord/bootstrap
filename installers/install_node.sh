@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: node
+# DisplayName: Node
+# Description: Install Node.js (LTS) and NVM
 #
 # Node.js and NVM Installer Script
 #

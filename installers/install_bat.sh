@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Tool: bat
+# DisplayName: Bat
+# Description: Install Bat (alternative to cat) and configure alias
 #
 # Bat Installer Script
 #

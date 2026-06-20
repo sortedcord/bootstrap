@@ -58,6 +58,12 @@ To bypass the editor and install the tool directly using the `ware` command, app
 b ware nvim -y
 ```
 
+To list all available installer tools and their descriptions, run the `ware` (or `bware`) command without any arguments:
+
+```bash
+b ware
+```
+
 You can also edit configurations located in your `~/.config/` directory by running:
 
 ```bash

@@ -35,22 +35,16 @@ When adding a new installer named `<name>`:
 
 Create `installers/install_<name>.sh` using the template below.
 
-### Step 2: Register in `routes.sh`
+### Step 2: Add metadata comments to the top of your installer script
 
-Make **two** edits to `routes.sh`:
+At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following three metadata headers:
+```bash
+# Tool: <name>
+# DisplayName: <displayName>
+# Description: <description>
+```
 
-1. **Add to the `INSTALLERS` associative array** (line ~19-26). Insert a new entry in alphabetical order:
-   ```bash
-   [<name>]="Short description of what it installs"
-   ```
-
-2. **Add to the `INSTALLER_KEYS` array** (line ~28). Insert the key in alphabetical order:
-   ```bash
-   INSTALLER_KEYS=(agy bat <name> node nvim yazi zoxide)
-   ```
-
-> [!IMPORTANT]
-> Both arrays must be kept in sync and in alphabetical order.
+The central router `routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `routes.sh` or `b.sh` are required.
 
 ### Step 3: Verify (optional)
 
@@ -67,6 +61,9 @@ Every installer follows this exact boilerplate structure. Copy this and fill in 
 
 ```bash
 #!/usr/bin/env bash
+# Tool: <name>
+# DisplayName: <ToolName>
+# Description: Short description of what it installs
 #
 # <ToolName> Installer Script
 #

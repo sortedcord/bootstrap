@@ -90,6 +90,7 @@ install_bootstrap() {
         "VERSION"
         "b.sh"
         "routes.sh"
+        "registry.sh"
         "lib/common.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
