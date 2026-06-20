@@ -12,8 +12,8 @@ if [ ! -f "$VERSION_FILE" ]; then
     exit 0
 fi
 
-# Check if there are staged changes other than the VERSION file
-if ! git diff --cached --name-only | grep -qv "^$VERSION_FILE$"; then
+# Check if there are staged changes other than VERSION, documentation (*.md), or installers folder
+if ! git diff --cached --name-only | grep -Ev "^($VERSION_FILE$|.*\.md$|^installers/)" | grep -q .; then
     # No other files staged, skip version bump
     exit 0
 fi
