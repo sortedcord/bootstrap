@@ -14,12 +14,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -82,7 +80,7 @@ install_yazi() {
             log_info "Yazi is already installed."
         fi
 
-        pkg_install curl wget git
+        pkg_install curl git
 
         log_info "Fetching latest Yazi version from GitHub..."
         local latest_tag
@@ -93,11 +91,7 @@ install_yazi() {
 
         local deb_url="https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-x86_64-unknown-linux-gnu.deb"
         log_info "Downloading Yazi ${latest_tag} from ${deb_url}..."
-        if has_command curl; then
             curl -fsSL "$deb_url" -o "$TMP_DIR/yazi.deb"
-        else
-            wget -qO "$TMP_DIR/yazi.deb" "$deb_url"
-        fi
 
         log_info "Installing Yazi package..."
         sudo apt install -y "$TMP_DIR/yazi.deb"

@@ -14,22 +14,20 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
 
 set -euo pipefail
 
-# Ensure we have curl or wget
+# Ensure we have curl
 install_downloader() {
-    if ! has_command curl && ! has_command wget; then
-        log_info "Neither curl nor wget found. Installing curl..."
+    if ! has_command curl; then
+        log_info "curl not found. Installing curl..."
         pkg_install curl
     fi
 }
@@ -89,27 +87,7 @@ install_rust() {
     local dest="$tmpdir/rustup-init"
 
     log_info "Downloading rustup-init..."
-    # Check for snap curl issue (snap curl cannot write to /tmp/ due to sandbox)
-    local use_wget=false
-    if has_command curl; then
-        local curl_path
-        curl_path=$(command -v curl)
-        if echo "$curl_path" | grep -q "/snap/"; then
-            if has_command wget; then
-                use_wget=true
-            else
-                log_warn "curl is installed via snap and may fail to write to temp directory."
-            fi
-        fi
-    else
-        use_wget=true
-    fi
-
-    if [ "$use_wget" = true ]; then
-        wget -qO "$dest" "$url"
-    else
-        curl -fsSL "$url" -o "$dest"
-    fi
+    curl -fsSL \"$url\" -o \"$dest\"|    curl -fsSL \"$url\" -o \"$dest\"
 
     chmod +x "$dest"
 

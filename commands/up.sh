@@ -18,7 +18,7 @@ if [ -f "$version_file" ]; then
 fi
 
 base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null || wget -qO- "$base_url/VERSION" 2>/dev/null)
+remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null)
 remote_ver=$(echo "$remote_ver" | tr -d '[:space:]')
 
 if [ -z "$remote_ver" ]; then
@@ -59,7 +59,7 @@ if version_lt "$local_ver" "$remote_ver" || [ "$force_update" = true ]; then
     fi
 
     tmp_bootstrap="$(mktemp)"
-    if curl -fsSL "$base_url/bootstrap.sh" -o "$tmp_bootstrap" || wget -qO "$tmp_bootstrap" "$base_url/bootstrap.sh"; then
+    if curl -fsSL "$base_url/bootstrap.sh" -o "$tmp_bootstrap"; then
         # Run bootstrap.sh in foreground
         if bash "$tmp_bootstrap"; then
             # Update the last update timestamp

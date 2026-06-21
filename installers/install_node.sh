@@ -14,12 +14,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -46,11 +44,7 @@ install_nvm() {
     # Try to fetch the latest version of NVM from GitHub API
     log_info "Fetching the latest NVM version..."
     local latest_tag=""
-    if has_command curl; then
         latest_tag=$(curl -sL https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-    elif has_command wget; then
-        latest_tag=$(wget -qO- https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-    fi
 
     if [ -z "$latest_tag" ]; then
         latest_tag="v0.40.5" # Fallback version if API request fails
@@ -62,11 +56,7 @@ install_nvm() {
     local nvm_url="https://github.com/nvm-sh/nvm/archive/refs/tags/${latest_tag}.tar.gz"
     log_info "Downloading NVM from $nvm_url..."
 
-    if has_command curl; then
         curl -fsSL "$nvm_url" -o "$TMP_DIR/nvm.tar.gz"
-    else
-        wget -qO "$TMP_DIR/nvm.tar.gz" "$nvm_url"
-    fi
 
     log_info "Extracting NVM archive directly to $HOME/.nvm (stripping versioned subfolder to keep config generic)..."
     mkdir -p "$HOME/.nvm"

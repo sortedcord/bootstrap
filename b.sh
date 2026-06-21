@@ -44,13 +44,13 @@ b() {
             [ -f "$routes_dir/VERSION" ] && local_ver=$(cat "$routes_dir/VERSION" 2>/dev/null | tr -d '[:space:]')
 
             local remote_ver
-            if remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null || wget -qO- "$base_url/VERSION" 2>/dev/null); then
+            if remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null); then
                 remote_ver=$(echo "$remote_ver" | tr -d '[:space:]')
                 if [ -n "$remote_ver" ] && _version_lt "$local_ver" "$remote_ver"; then
                     echo "New version $remote_ver available (local: $local_ver). Auto-updating..." >&2
                     local tmp_bootstrap
                     tmp_bootstrap="$(mktemp)"
-                    if curl -fsSL "$base_url/bootstrap.sh" -o "$tmp_bootstrap" 2>/dev/null || wget -qO "$tmp_bootstrap" "$base_url/bootstrap.sh" 2>/dev/null; then
+                    if curl -fsSL "$base_url/bootstrap.sh" -o "$tmp_bootstrap" 2>/dev/null; then
                         bash "$tmp_bootstrap" >/dev/null 2>&1
                     fi
                     rm -f "$tmp_bootstrap"

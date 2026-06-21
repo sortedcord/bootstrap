@@ -8,6 +8,11 @@ if [ -z "${BASH_VERSION:-}" ]; then
     exit 1
 fi
 
+if ! command -v curl >/dev/null 2>&1; then
+    echo "Error: curl is required to run this script." >&2
+    exit 1
+fi
+
 # Detect if the script is sourced
 is_sourced=false
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
@@ -37,35 +42,12 @@ else
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
     _LIBS=("lib/common.sh" "lib/platform.sh" "lib/shell_config.sh")
     
-    _has_curl=false
-    _has_wget=false
-    if command -v curl >/dev/null 2>&1; then
-        _has_curl=true
-    elif command -v wget >/dev/null 2>&1; then
-        _has_wget=true
-    else
-        echo "Error: Neither curl nor wget is installed to download libraries." >&2
-        exit 1
-    fi
-
-    if [ "$_has_curl" = true ]; then
-        _curl_args=()
-        for _lib in "${_LIBS[@]}"; do
-            mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
-            _curl_args+=("-o" "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib")
-        done
-        curl -fsSL "${_curl_args[@]}" 2>/dev/null
-    elif [ "$_has_wget" = true ]; then
-        _pids=()
-        for _lib in "${_LIBS[@]}"; do
-            mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
-            wget -qO "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib" 2>/dev/null &
-            _pids+=($!)
-        done
-        for _pid in "${_pids[@]}"; do
-            wait "$_pid" || true
-        done
-    fi
+    _curl_args=()
+    for _lib in "${_LIBS[@]}"; do
+        mkdir -p "$BOOTSTRAP_TMP_DIR/$(dirname "$_lib")"
+        _curl_args+=("-o" "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib")
+    done
+    curl -fsSL "${_curl_args[@]}" 2>/dev/null
     
     if [ -f "$BOOTSTRAP_TMP_DIR/lib/common.sh" ]; then
         . "$BOOTSTRAP_TMP_DIR/lib/common.sh"
@@ -118,45 +100,14 @@ install_bootstrap() {
         log_info "Downloading bootstrap scripts..."
         local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
         
-        local has_curl=false
-        local has_wget=false
-        if command -v curl >/dev/null 2>&1; then
-            has_curl=true
-        elif command -v wget >/dev/null 2>&1; then
-            has_wget=true
-        else
-            log_error "Neither curl nor wget is installed."
+        local curl_args=()
+        for file in "${files[@]}"; do
+            mkdir -p "$(dirname "$routes_dir/$file")"
+            curl_args+=("-o" "$routes_dir/$file" "$base_url/$file")
+        done
+        if ! curl -fsSL "${curl_args[@]}"; then
+            log_error "Failed to download bootstrap scripts."
             exit 1
-        fi
-
-        if [ "$has_curl" = true ]; then
-            local curl_args=()
-            for file in "${files[@]}"; do
-                mkdir -p "$(dirname "$routes_dir/$file")"
-                curl_args+=("-o" "$routes_dir/$file" "$base_url/$file")
-            done
-            if ! curl -fsSL "${curl_args[@]}"; then
-                log_error "Failed to download bootstrap scripts."
-                exit 1
-            fi
-        elif [ "$has_wget" = true ]; then
-            local pids=()
-            for file in "${files[@]}"; do
-                mkdir -p "$(dirname "$routes_dir/$file")"
-                local file_url="$base_url/$file"
-                wget -qO "$routes_dir/$file" "$file_url" &
-                pids+=($!)
-            done
-            local err=0
-            for pid in "${pids[@]}"; do
-                if ! wait "$pid"; then
-                    err=1
-                fi
-            done
-            if [ "$err" -ne 0 ]; then
-                log_error "Failed to download some bootstrap scripts."
-                exit 1
-            fi
         fi
     fi
 
@@ -230,13 +181,8 @@ if [ "$is_sourced" = false ]; then
             _version_file="$BOOTSTRAP_TMP_DIR/VERSION"
             _base_url="${_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
             if [ ! -f "$_art_file" ]; then
-                if command -v curl >/dev/null 2>&1; then
-                    curl -fsSL -o "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
-                    curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null
-                elif command -v wget >/dev/null 2>&1; then
-                    wget -qO "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
-                    wget -qO "$_version_file" "$_base_url/VERSION" 2>/dev/null
-                fi
+                curl -fsSL -o "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
+                curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null
             fi
         fi
     fi

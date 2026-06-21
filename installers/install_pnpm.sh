@@ -14,7 +14,7 @@
 #   - Fedora/RHEL:   dnf install -y libatomic
 #
 # Docker usage:
-#   wget -qO- https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
+#   curl -fsSL https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 #
 
 # Run metascript to check if the shell is bash and load libraries
@@ -25,12 +25,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -46,11 +44,7 @@ trap cleanup EXIT
 # ─── Helper Functions ─────────────────────────────────────────────────
 
 download() {
-    if has_command curl; then
         curl -fsSL "$1"
-    else
-        wget -qO- "$1"
-    fi
 }
 
 is_glibc_compatible() {

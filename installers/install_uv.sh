@@ -14,12 +14,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -40,9 +38,9 @@ install_uv() {
         fi
     fi
 
-    # Ensure curl or wget is installed
-    if ! has_command curl && ! has_command wget; then
-        log_info "curl or wget not found. Installing curl..."
+    # Ensure curl is installed
+    if ! has_command curl; then
+        log_info "curl not found. Installing curl..."
         pkg_install curl
     fi
 
@@ -66,11 +64,7 @@ install_uv() {
 
     log_info "Fetching latest uv version from GitHub..."
     local latest_tag=""
-    if has_command curl; then
         latest_tag=$(curl -sL https://api.github.com/repos/astral-sh/uv/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-    elif has_command wget; then
-        latest_tag=$(wget -qO- https://api.github.com/repos/astral-sh/uv/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-    fi
 
     local download_url
     if [ -n "$latest_tag" ]; then
@@ -84,11 +78,7 @@ install_uv() {
 
     log_info "Downloading uv from ${download_url}..."
     local archive="$TMP_DIR/uv.tar.gz"
-    if has_command curl; then
         curl -fsSL "$download_url" -o "$archive"
-    else
-        wget -qO "$archive" "$download_url"
-    fi
 
     # Extract the binaries
     log_info "Extracting uv binaries..."

@@ -14,12 +14,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -45,7 +43,7 @@ check_config_dir() {
 install_packages() {
     log_info "Detecting distribution and installing dependencies..."
     pkg_install \
-        git wget tar curl unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        git tar curl unzip ripgrep fzf nodejs npm xclip wl-clipboard \
         "arch:fd|debian:fd-find|fedora:fd-find" \
         "arch:cmake|debian:cmake|fedora:cmake" \
         "arch:make|debian:build-essential|fedora:make" \
@@ -87,11 +85,7 @@ install_nvim() {
     local nvim_url="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${nvim_arch}.tar.gz"
 
     log_info "Downloading Neovim v${NVIM_VERSION} for ${arch}..."
-    if has_command curl; then
         curl -fsSL "$nvim_url" -o "$TMP_DIR/nvim.tar.gz"
-    else
-        wget -qO "$TMP_DIR/nvim.tar.gz" "$nvim_url"
-    fi
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 

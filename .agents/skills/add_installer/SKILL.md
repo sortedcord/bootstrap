@@ -85,12 +85,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -119,7 +117,7 @@ install_<name>() {
     #   local distro; distro=$(detect_distro)
     # Use detect_arch for arch-specific logic:
     #   local arch; arch=$(detect_arch)
-    # For GitHub releases, use curl/wget pattern (see bat installer for reference)
+    # For GitHub releases, use curl pattern (see bat installer for reference)
 }
 
 # ─── Shell Configuration (if needed) ─────────────────────────────────
@@ -235,10 +233,6 @@ esac
 local latest_tag=""
 if has_command curl; then
     latest_tag=$(curl -sL https://api.github.com/repos/<owner>/<repo>/releases/latest \
-        | grep '"tag_name":' | head -n1 \
-        | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-elif has_command wget; then
-    latest_tag=$(wget -qO- https://api.github.com/repos/<owner>/<repo>/releases/latest \
         | grep '"tag_name":' | head -n1 \
         | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
 fi

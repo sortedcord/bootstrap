@@ -14,12 +14,10 @@ METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/mast
 if [ -f "$METASCRIPT_LOCAL" ]; then
     . "$METASCRIPT_LOCAL"
 else
-    if command -v wget >/dev/null 2>&1; then
-        eval "$(wget -qO- "$METASCRIPT_URL")"
-    elif command -v curl >/dev/null 2>&1; then
+    if command -v curl >/dev/null 2>&1; then
         eval "$(curl -fsSL "$METASCRIPT_URL")"
     else
-        echo "Error: Neither wget nor curl is installed to fetch bootstrap.sh." >&2
+        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
         exit 1
     fi
 fi
@@ -60,11 +58,7 @@ install_agy() {
     local manifest_url="$DOWNLOAD_BASE_URL/manifests/$platform.json"
     local manifest_json=""
 
-    if has_command curl; then
         manifest_json=$(curl -fsSL "$manifest_url" 2>/dev/null || true)
-    elif has_command wget; then
-        manifest_json=$(wget -qO- "$manifest_url" 2>/dev/null || true)
-    fi
 
     if [ -z "$manifest_json" ]; then
         log_error "Could not connect to the release server to download the manifest."
@@ -112,11 +106,7 @@ install_agy() {
     fi
 
     log_info "Downloading release package..."
-    if has_command curl; then
         curl -fsSL "$url" -o "$staging_payload"
-    else
-        wget -qO "$staging_payload" "$url"
-    fi
 
     # Verify SHA512 Checksum
     local actual_hash

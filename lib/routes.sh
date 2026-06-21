@@ -27,13 +27,8 @@ else
     _tmp_registry=$(mktemp)
     BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
     BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
-    if has_command curl; then
-        curl -fsSL "${BOOTSTRAP_BASE_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
-        curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null
-    elif has_command wget; then
-        wget -qO "$_tmp_registry" "${BOOTSTRAP_BASE_URL}/lib/registry.sh" 2>/dev/null || \
-        wget -qO "$_tmp_registry" "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" 2>/dev/null
-    fi
+    curl -fsSL "${BOOTSTRAP_BASE_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
+    curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null
     if [ -s "$_tmp_registry" ]; then
         . "$_tmp_registry"
     else
@@ -81,26 +76,12 @@ run_ware() {
         local download_status=0
 
         log_info "Downloading ${display_name} installer..."
-        if has_command curl; then
-            curl -fsSL "${BOOTSTRAP_BASE_URL}/${installer_path}" -o "$temp_script"
+        curl -fsSL "${BOOTSTRAP_BASE_URL}/${installer_path}" -o "$temp_script"
+        download_status=$?
+        if [ "$download_status" -ne 0 ]; then
+            log_warn "Failed to download installer from primary URL, trying fallback..."
+            curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" -o "$temp_script"
             download_status=$?
-            if [ "$download_status" -ne 0 ]; then
-                log_warn "Failed to download installer from primary URL, trying fallback..."
-                curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/${installer_path}" -o "$temp_script"
-                download_status=$?
-            fi
-        elif has_command wget; then
-            wget -qO "$temp_script" "${BOOTSTRAP_BASE_URL}/${installer_path}"
-            download_status=$?
-            if [ "$download_status" -ne 0 ]; then
-                log_warn "Failed to download installer from primary URL, trying fallback..."
-                wget -qO "$temp_script" "${BOOTSTRAP_FALLBACK_URL}/${installer_path}"
-                download_status=$?
-            fi
-        else
-            log_error "Neither curl nor wget is installed to download the installer."
-            rm -f "$temp_script"
-            exit 1
         fi
 
         if [ "$download_status" -ne 0 ]; then
