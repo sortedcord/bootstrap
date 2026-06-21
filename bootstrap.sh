@@ -239,7 +239,7 @@ EOF
                 _version=$(cat "$_version_file" | tr -d '\r\n')
             fi
             if [ -z "$_version" ]; then
-                _version="1.0.7" # Fallback matching VERSION file
+                _version="0.0.0" # Fallback if VERSION missing
             fi
             _version_str="v$_version"
             _version_len=${#_version_str}

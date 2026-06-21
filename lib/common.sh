@@ -67,3 +67,20 @@ make_temp_dir() {
     tmp_dir="$(mktemp -d)"
     echo "$tmp_dir"
 }
+
+# Version comparison helper (returns 0 if $1 < $2, 1 otherwise)
+version_lt() {
+    [ "$1" = "$2" ] && return 1
+    local IFS=.
+    local i ver1=($1) ver2=($2)
+    for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
+    for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done
+    for ((i=0; i<3; i++)); do
+        if ((10#${ver1[i]} < 10#${ver2[i]})); then
+            return 0
+        elif ((10#${ver1[i]} > 10#${ver2[i]})); then
+            return 1
+        fi
+    done
+    return 1
+}

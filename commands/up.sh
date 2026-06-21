@@ -26,22 +26,6 @@ if [ -z "$remote_ver" ]; then
     exit 1
 fi
 
-# Version comparison helper
-version_lt() {
-    [ "$1" = "$2" ] && return 1
-    local IFS=.
-    local i ver1=($1) ver2=($2)
-    for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
-    for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done
-    for ((i=0; i<3; i++)); do
-        if ((10#${ver1[i]} < 10#${ver2[i]})); then
-            return 0
-        elif ((10#${ver1[i]} > 10#${ver2[i]})); then
-            return 1
-        fi
-    done
-    return 1
-}
 
 log_info "Local version:  $local_ver"
 log_info "Remote version: $remote_ver"
