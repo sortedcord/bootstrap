@@ -204,7 +204,7 @@ for script in "${SCRIPTS[@]}"; do
                     run_ware "$tool" "$@"
                 done
                 ;;
-            bye)
+            gone)
                 if [ -f "$BOOTSTRAP_DIR/commands/uninstall.sh" ]; then
                     . "$BOOTSTRAP_DIR/commands/uninstall.sh"
                 else

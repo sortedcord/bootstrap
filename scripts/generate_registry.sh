@@ -19,7 +19,7 @@ for f in "$INSTALLERS_DIR"/install_*.sh; do
     [ -f "$f" ] || continue
     tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
     disp_name=$(grep -E "^# DisplayName:" "$f" | head -n1 | sed -E 's/^# DisplayName:\s*//I')
-    desc=$(grep -E "^# Description:" "$f" | head -n1 | sed -E 's/^# Description:\s*//I')
+    desc=$(grep -E "^# Description:" "$f" | head -n1 | sed -E 's/^# Description:\s*//I' | sed -E 's/^Install\s+//I')
     
     if [ -n "$tool" ]; then
         tools_desc["$tool"]="$desc"

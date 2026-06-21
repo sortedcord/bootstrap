@@ -88,10 +88,16 @@ b up --force
 
 ## Uninstallation
 
-To completely remove the bootstrap helper tool and clear out the shell configurations (leaving any installed software configs intact), run:
+To uninstall the bootstrap helper tool but leave a lightweight `b back` function to easily reinstall it later:
 
 ```bash
-b bye
+b gone
+```
+
+To completely remove the bootstrap helper tool, clear out all shell configurations (including the `b back` shortcut), and leave nothing behind:
+
+```bash
+b gone -f
 ```
 
 Then reload your shell configuration or run `unset -f b` to clear the function definition from your current terminal session.

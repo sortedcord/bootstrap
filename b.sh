@@ -34,7 +34,7 @@ b() {
 
     # Auto-update check: once every 24 hours, or if routes.sh or VERSION is missing
     # Skip when uninstalling — no point updating bootstrap if we're about to remove it
-    if [ "${1:-}" != "bye" ]; then
+    if [ "${1:-}" != "gone" ]; then
         if [ $((current_time - last_update)) -gt 86400 ] || [ ! -f "$routes_file" ] || [ ! -f "$routes_dir/VERSION" ]; then
             # Update the timestamp immediately to prevent spamming on connection errors
             echo "$current_time" > "$last_update_file"
@@ -77,7 +77,7 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all con bye up ware bware"
+        opts="all con gone up ware bware"
         
         local routes_dir="$HOME/.config/bootstrap"
         local installer_keys=""
