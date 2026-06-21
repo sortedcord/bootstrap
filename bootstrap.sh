@@ -25,19 +25,16 @@ _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
 
 if [ -f "$_SCRIPT_DIR/lib/common.sh" ]; then
     # Dev/local mode: source directly from repo
-    . "$_SCRIPT_DIR/lib/common.sh"
-    . "$_SCRIPT_DIR/lib/platform.sh"
-    . "$_SCRIPT_DIR/lib/shell_config.sh"
+    BOOTSTRAP_SOURCE_DIR="$_SCRIPT_DIR"
 elif [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
     # Installed mode: source from bootstrap dir
-    . "$BOOTSTRAP_DIR/lib/common.sh"
-    . "$BOOTSTRAP_DIR/lib/platform.sh"
-    . "$BOOTSTRAP_DIR/lib/shell_config.sh"
+    BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_DIR"
 else
     # Standalone/remote mode: download to a temp directory and source
     export BOOTSTRAP_TMP_DIR
     BOOTSTRAP_TMP_DIR="$(mktemp -d)"
     trap 'rm -rf "$BOOTSTRAP_TMP_DIR"' EXIT
+    BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_TMP_DIR"
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
     _LIBS=("lib/common.sh" "lib/platform.sh" "lib/shell_config.sh")
@@ -48,15 +45,15 @@ else
         _curl_args+=("-o" "$BOOTSTRAP_TMP_DIR/$_lib" "$_BASE_URL/$_lib")
     done
     curl -fsSL "${_curl_args[@]}" 2>/dev/null
-    
-    if [ -f "$BOOTSTRAP_TMP_DIR/lib/common.sh" ]; then
-        . "$BOOTSTRAP_TMP_DIR/lib/common.sh"
-        . "$BOOTSTRAP_TMP_DIR/lib/platform.sh"
-        . "$BOOTSTRAP_TMP_DIR/lib/shell_config.sh"
-    else
-        echo "Error: Failed to download bootstrap libraries." >&2
-        exit 1
-    fi
+fi
+
+if [ -f "$BOOTSTRAP_SOURCE_DIR/lib/common.sh" ]; then
+    . "$BOOTSTRAP_SOURCE_DIR/lib/common.sh"
+    . "$BOOTSTRAP_SOURCE_DIR/lib/platform.sh"
+    . "$BOOTSTRAP_SOURCE_DIR/lib/shell_config.sh"
+else
+    echo "Error: Failed to locate or download bootstrap libraries." >&2
+    exit 1
 fi
 
 # Install/update the bootstrap loader and download all necessary files
@@ -172,19 +169,14 @@ if [ "$is_sourced" = false ]; then
     clear 2>/dev/null || true
 
     # Locate or download pixel_art.ansi and VERSION
-    _art_file="$_SCRIPT_DIR/assets/pixel_art.ansi"
-    _version_file="$_SCRIPT_DIR/VERSION"
+    _art_file="$BOOTSTRAP_SOURCE_DIR/assets/pixel_art.ansi"
+    _version_file="$BOOTSTRAP_SOURCE_DIR/VERSION"
     
-    if [ ! -f "$_art_file" ]; then
-        if [ -n "${BOOTSTRAP_TMP_DIR:-}" ] && [ -d "$BOOTSTRAP_TMP_DIR" ]; then
-            _art_file="$BOOTSTRAP_TMP_DIR/pixel_art.ansi"
-            _version_file="$BOOTSTRAP_TMP_DIR/VERSION"
-            _base_url="${_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
-            if [ ! -f "$_art_file" ]; then
-                curl -fsSL -o "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null
-                curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null
-            fi
-        fi
+    if [ ! -f "$_art_file" ] && [ -n "${BOOTSTRAP_TMP_DIR:-}" ]; then
+        _base_url="${_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
+        mkdir -p "$(dirname "$_art_file")"
+        curl -fsSL -o "$_art_file" "$_base_url/assets/pixel_art.ansi" 2>/dev/null || true
+        curl -fsSL -o "$_version_file" "$_base_url/VERSION" 2>/dev/null || true
     fi
 
     if [ -f "$_art_file" ]; then

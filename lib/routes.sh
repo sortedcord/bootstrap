@@ -2,42 +2,32 @@
 # Central routing script for bootstrap installers.
 # This file is updated automatically by the 'b' command.
 
-BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
+_LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
+BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$(dirname "$_LIB_DIR")}"
+
+# Fallback to ~/.config/bootstrap if not found locally
+if [ ! -d "$BOOTSTRAP_DIR/lib" ]; then
+    BOOTSTRAP_DIR="$HOME/.config/bootstrap"
+fi
 
 # Source common library
 if [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
     . "$BOOTSTRAP_DIR/lib/common.sh"
 else
-    # Fallback/Bootstrap case if lib is not installed yet
     echo "Error: Bootstrap libraries not found at $BOOTSTRAP_DIR/lib/" >&2
     exit 1
 fi
 
 require_bash
 
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
-
 # Source registry
-if [ -f "$_SCRIPT_DIR/registry.sh" ]; then
-    . "$_SCRIPT_DIR/registry.sh"
-elif [ -f "$BOOTSTRAP_DIR/lib/registry.sh" ]; then
+if [ -f "$BOOTSTRAP_DIR/lib/registry.sh" ]; then
     . "$BOOTSTRAP_DIR/lib/registry.sh"
 else
-    # Standalone/remote fallback: download registry
-    _tmp_registry=$(mktemp)
-    BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
-    BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
-    curl -fsSL "${BOOTSTRAP_BASE_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null || \
-    curl -fsSL "${BOOTSTRAP_FALLBACK_URL}/lib/registry.sh" -o "$_tmp_registry" 2>/dev/null
-    if [ -s "$_tmp_registry" ]; then
-        . "$_tmp_registry"
-    else
-        # Critical fallback
-        declare -A INSTALLERS
-        declare -A INSTALLER_DISPLAYS
-        INSTALLER_KEYS=()
-    fi
-    rm -f "$_tmp_registry"
+    # Critical fallback
+    declare -A INSTALLERS
+    declare -A INSTALLER_DISPLAYS
+    INSTALLER_KEYS=()
 fi
 
 # Helper function to run/edit installer scripts
