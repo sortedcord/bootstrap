@@ -84,3 +84,9 @@ version_lt() {
     done
     return 1
 }
+
+# Export functions and variables for subshells
+export _LIB_COMMON_SOURCED=1
+export RED GREEN YELLOW BLUE NC
+export -f require_bash log_info log_success log_warn log_error confirm has_command make_temp_dir version_lt
+

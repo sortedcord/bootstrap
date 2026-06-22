@@ -109,3 +109,8 @@ create_fd_symlink() {
         sudo ln -sf "$(command -v fdfind)" /usr/local/bin/fd
     fi
 }
+
+# Export functions and variables for subshells
+export _LIB_SHELL_CONFIG_SOURCED=1
+export -f get_shell_configs remove_block inject_block add_alias_if_missing add_env_if_missing create_fd_symlink
+

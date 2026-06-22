@@ -9,6 +9,7 @@ BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$(dirname "$_LIB_DIR")}"
 if [ ! -d "$BOOTSTRAP_DIR/lib" ]; then
     BOOTSTRAP_DIR="$HOME/.config/bootstrap"
 fi
+export BOOTSTRAP_DIR
 
 # Source common library
 if [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
@@ -54,6 +55,13 @@ run_ware() {
     
     # Check for local installer first
     local local_installer="$BOOTSTRAP_DIR/installers/install_${tool}.sh"
+    
+    if [ "$bypass_edit" = "true" ] && [ -f "$local_installer" ]; then
+        log_info "Running ${display_name} installer..."
+        bash "$local_installer" "${cmd_args[@]}"
+        return $?
+    fi
+
     local temp_script
     temp_script=$(mktemp --suffix=".sh" 2>/dev/null || mktemp)
 

@@ -18,6 +18,10 @@ is_sourced=false
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
     is_sourced=true
 fi
+# Detect eval from installers based on presence of specific variables
+if [ -n "${METASCRIPT_URL:-}" ]; then
+    is_sourced=true
+fi
 
 # Locate or download libraries so that sourced installers can use them
 BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"

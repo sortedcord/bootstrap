@@ -77,20 +77,10 @@ Every installer follows this exact boilerplate structure. Copy this and fill in 
 # <ToolName> Installer Script
 #
 
-# Run metascript to check if the shell is bash and load libraries
-PARENT_DIR="$(dirname "$0")/.."
-METASCRIPT_LOCAL="$PARENT_DIR/bootstrap.sh"
-METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
-
-if [ -f "$METASCRIPT_LOCAL" ]; then
-    . "$METASCRIPT_LOCAL"
-else
-    if command -v curl >/dev/null 2>&1; then
-        eval "$(curl -fsSL "$METASCRIPT_URL")"
-    else
-        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
-        exit 1
-    fi
+# Prevent standalone execution
+if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
+    echo "Error: This script must be run through the 'b' CLI." >&2
+    exit 1
 fi
 
 set -euo pipefail
@@ -259,7 +249,7 @@ inject_block "$config_file" "<tool> init" 'eval "$(tool init bash)"'
 3. **Confirmation prompts**: Always ask before installing. Check if already installed first.
 4. **Idempotent**: Installers must be safe to re-run. Use `inject_block` (not append) for shell configs.
 5. **No hardcoded paths**: Use `$HOME`, library functions, and `detect_*` helpers.
-6. **Error handling**: Use `set -euo pipefail` after sourcing `bootstrap.sh`.
-7. **Metascript boilerplate**: The first 22 lines of every installer are identical — always copy them verbatim.
+6. **Error handling**: Use `set -euo pipefail` after the guard block.
+7. **CLI Enforcement Guard**: Always copy the standalone execution guard block verbatim to the top of your installer script to prevent direct execution.
 8. **`main "$@"`**: Always end with this pattern to pass through CLI arguments.
 9. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.

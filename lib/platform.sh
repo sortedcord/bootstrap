@@ -88,3 +88,8 @@ pkg_install() {
             ;;
     esac
 }
+
+# Export functions and variables for subshells
+export _LIB_PLATFORM_SOURCED=1
+export -f detect_distro detect_arch pkg_install
+

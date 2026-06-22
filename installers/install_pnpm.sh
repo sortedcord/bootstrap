@@ -17,20 +17,10 @@
 #   curl -fsSL https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 #
 
-# Run metascript to check if the shell is bash and load libraries
-PARENT_DIR="$(dirname "$0")/.."
-METASCRIPT_LOCAL="$PARENT_DIR/bootstrap.sh"
-METASCRIPT_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/bootstrap.sh"
-
-if [ -f "$METASCRIPT_LOCAL" ]; then
-    . "$METASCRIPT_LOCAL"
-else
-    if command -v curl >/dev/null 2>&1; then
-        eval "$(curl -fsSL "$METASCRIPT_URL")"
-    else
-        echo "Error: curl is not installed to fetch bootstrap.sh." >&2
-        exit 1
-    fi
+# Prevent standalone execution
+if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
+    echo "Error: This script must be run through the 'b' CLI." >&2
+    exit 1
 fi
 
 set -euo pipefail
