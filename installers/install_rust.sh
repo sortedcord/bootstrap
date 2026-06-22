@@ -14,6 +14,12 @@ fi
 
 set -euo pipefail
 
+TMP_DIR="$(make_temp_dir)"
+cleanup() {
+    rm -rf "$TMP_DIR"
+}
+trap cleanup EXIT
+
 # Ensure we have curl
 install_downloader() {
     if ! has_command curl; then
@@ -67,17 +73,10 @@ install_rust() {
 
     local url="https://static.rust-lang.org/rustup/dist/${target}/rustup-init"
     
-    local tmpdir
-    tmpdir="$(make_temp_dir)"
-    cleanup() {
-        rm -rf "$tmpdir"
-    }
-    trap cleanup EXIT
-
-    local dest="$tmpdir/rustup-init"
+    local dest="$TMP_DIR/rustup-init"
 
     log_info "Downloading rustup-init..."
-    curl -fsSL \"$url\" -o \"$dest\"|    curl -fsSL \"$url\" -o \"$dest\"
+    curl -fsSL "$url" -o "$dest"
 
     chmod +x "$dest"
 
