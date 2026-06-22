@@ -11,9 +11,11 @@ if [ ! -d "$BOOTSTRAP_DIR/lib" ]; then
 fi
 export BOOTSTRAP_DIR
 
-# Source common library
+# Source libraries
 if [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
     . "$BOOTSTRAP_DIR/lib/common.sh"
+    . "$BOOTSTRAP_DIR/lib/platform.sh"
+    . "$BOOTSTRAP_DIR/lib/shell_config.sh"
 else
     echo "Error: Bootstrap libraries not found at $BOOTSTRAP_DIR/lib/" >&2
     exit 1
