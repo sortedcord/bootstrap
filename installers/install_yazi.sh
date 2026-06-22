@@ -74,7 +74,7 @@ install_yazi() {
 
         log_info "Fetching latest Yazi version from GitHub..."
         local latest_tag
-        latest_tag=$(curl -sL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+        latest_tag=$(curl -sL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
         if [ -z "$latest_tag" ]; then
             latest_tag="v26.5.6"
         fi
