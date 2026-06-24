@@ -77,6 +77,28 @@ b con i3
 
 It automatically fuzzy-finds the folder in case there is no exact match. Also, in case there is only a singular config file in that folder, then it will directly open that file.
 
+### Rollbacks and Savepoints (`b rb` and `b fall`)
+
+Bootstrap CLI features a powerful, procedural rollback system. It strictly tracks every extracted binary, configuration snippet, and package manager transaction to ensure your environment stays clean.
+
+To safely uninstall the very last tool you installed (including wiping its shell paths and aliases):
+
+```bash
+b rb
+```
+
+To create a named savepoint before experimenting with your setup:
+
+```bash
+b fall pre_dev_setup
+```
+
+To completely roll back all installations made after that savepoint, restoring your system back to that exact state:
+
+```bash
+b rb pre_dev_setup
+```
+
 ### Updating
 
 To check for updates and update the tool manually:
