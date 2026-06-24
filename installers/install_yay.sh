@@ -30,10 +30,10 @@ install_yay() {
     fi
 
     local needs_install=false
-    if ! pacman -Qq git &>/dev/null; then
+    if ! pkg_check git; then
         needs_install=true
     fi
-    if ! pacman -Qq base-devel &>/dev/null && ! pacman -Qg base-devel &>/dev/null; then
+    if ! pkg_check base-devel && ! pacman -Qg base-devel &>/dev/null; then
         needs_install=true
     fi
 
