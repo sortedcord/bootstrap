@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Tool: nvim
 # DisplayName: Neovim
-# Description: Install Neovim 0.11.7 and configuration
+# Description: Install Neovim 0.12.0 and configuration
 #
 # Neovim Installer Script
 #
@@ -14,7 +14,7 @@ fi
 
 set -euo pipefail
 
-NVIM_VERSION="0.11.7"
+NVIM_VERSION="0.12.0"
 NVIM_INSTALL_DIR="/opt/nvim"
 NVIM_CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
 NVIM_CONFIG_DIR="$HOME/.config/nvim"
@@ -44,6 +44,9 @@ install_packages() {
         "fedora:gcc-c++"
         
     create_fd_symlink
+
+    log_info "Installing tree-sitter-cli globally..."
+    sudo npm install -g tree-sitter-cli
 }
 
 install_nvim() {
