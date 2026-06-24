@@ -68,7 +68,7 @@ install_uv() {
 
     log_info "Downloading uv from ${download_url}..."
     local archive="$TMP_DIR/uv.tar.gz"
-        curl -fsSL "$download_url" -o "$archive"
+    download_file "$download_url" "$archive"
 
     # Extract the binaries
     log_info "Extracting uv binaries..."

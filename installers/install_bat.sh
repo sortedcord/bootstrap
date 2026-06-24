@@ -63,7 +63,7 @@ install_bat() {
 
         local deb_url="https://github.com/sharkdp/bat/releases/download/${latest_tag}/bat_${version}_${deb_arch}.deb"
         log_info "Downloading Bat from ${deb_url}..."
-            curl -fsSL "$deb_url" -o "$TMP_DIR/bat.deb"
+        download_file "$deb_url" "$TMP_DIR/bat.deb"
 
         log_info "Installing Bat package..."
         sudo apt install -y "$TMP_DIR/bat.deb"

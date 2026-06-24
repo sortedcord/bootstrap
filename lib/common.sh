@@ -84,9 +84,46 @@ version_lt() {
     done
     return 1
 }
+# Cached and resumable download helper
+download_file() {
+    local url="$1"
+    local dest="$2"
+    local cache_dir="$HOME/.local/state/bootstrap/cache"
+    
+    mkdir -p "$cache_dir"
+    
+    local safe_name
+    if has_command md5sum; then
+        safe_name=$(echo -n "$url" | md5sum | cut -d' ' -f1)
+    elif has_command shasum; then
+        safe_name=$(echo -n "$url" | shasum | cut -d' ' -f1)
+    else
+        safe_name=$(echo -n "$url" | tr -c '[:alnum:]_.-' '_')
+    fi
+    
+    local base_name
+    base_name=$(basename "$url")
+    local cache_file="$cache_dir/${safe_name}_${base_name}"
+    
+    log_info "Downloading $base_name (resumable)..."
+    if ! curl -fL -C - "$url" -o "$cache_file"; then
+        local exit_code=$?
+        # Exit code 33: HTTP server doesn't support ranges/resuming
+        # Exit code 36: Bad download resume offset
+        if [ $exit_code -eq 33 ] || [ $exit_code -eq 36 ]; then
+            log_warn "Server does not support resuming. Retrying from scratch..."
+            rm -f "$cache_file"
+            curl -fL "$url" -o "$cache_file" || return 1
+        else
+            return $exit_code
+        fi
+    fi
+    
+    mkdir -p "$(dirname "$dest")"
+    cp "$cache_file" "$dest"
+}
 
 # Export functions and variables for subshells
 export _LIB_COMMON_SOURCED=1
 export RED GREEN YELLOW BLUE NC
-export -f require_bash log_info log_success log_warn log_error confirm has_command make_temp_dir version_lt
-
+export -f require_bash log_info log_success log_warn log_error confirm has_command make_temp_dir version_lt download_file

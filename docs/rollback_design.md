@@ -105,3 +105,29 @@ Because `b ware <tool>` allows users to modify installation scripts:
 The `pkg_remove` helper utilizes reference counting via simple text files (e.g., `~/.local/state/bootstrap/packages/curl`). 
 - **On `pkg_install`**: Append tool name.
 - **On `pkg_remove`**: Remove tool name. If empty, proceed with system uninstallation.
+
+## 8. Fault Tolerance, Resumability, and Interrupted Installations
+
+To handle failures during installation (e.g., network drops, script errors, or user cancellation via `Ctrl+C`), the CLI incorporates a transactional approach that balances **automatic rollback** and **resumability**:
+
+### A. The Interruption Trap & Prompt
+When running an installer, the central router (`lib/routes.sh`) traps `SIGINT` and `SIGTERM` signals. If the installation fails or is interrupted:
+1. The trap catches the event and stops execution.
+2. The user is prompted interactively:
+   - **Rollback (r)**: Invokes `execute_rollback <tool>` immediately to clean up all partial modifications.
+   - **Keep (k)**: Preserves the partial changes and leaves the `.cmds` manifest intact.
+3. In non-interactive environments (e.g., CI/CD or scripts), the CLI defaults to **automatic rollback** to keep the system clean.
+
+### B. Resuming via Preserved Manifests
+If the user chooses to **keep** the partial state and runs `b <tool>` again:
+1. `setup_uninstaller_context` detects that a manifest already exists and that the tool was *not* successfully installed (no `INSTALL: <tool>` in the history log).
+2. It **preserves** the existing manifest instead of wiping it.
+3. As the script runs again from the top, new rollback commands are prepended to the existing manifest, maintaining the correct LIFO order without losing the tracking of previously completed steps.
+
+### C. Resumable Downloads (Caching Layer)
+To make rerunning an interrupted script fast and efficient, installers use `download_file <url> <dest>` instead of raw `curl`:
+1. It downloads the payload to a central cache directory: `~/.local/state/bootstrap/cache/`.
+2. It uses `curl -C -` to continue the download from the byte offset where it was interrupted.
+3. Once completed, it copies the cached file to the installer's temp directory.
+4. Distro package manager commands (`pkg_install`) and shell snippets (`write_env_snippet`) are naturally idempotent, allowing the script to breeze through already completed steps in milliseconds and resume exactly where the heavy work failed.
+

@@ -59,7 +59,7 @@ install_starship() {
 
     log_info "Downloading Starship from ${download_url}..."
     local archive="$TMP_DIR/starship.tar.gz"
-        curl -fsSL "$download_url" -o "$archive"
+    download_file "$download_url" "$archive"
 
     # Extract the binary
     log_info "Extracting Starship binary..."

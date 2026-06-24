@@ -114,11 +114,54 @@ run_ware() {
     # Run the script (edited or unchanged)
     log_info "Running ${display_name} installer..."
     setup_uninstaller_context "$tool"
+    
+    # Set trap for signals to intercept interruption and allow user to choose rollback/keep
+    local interrupted=false
+    trap 'interrupted=true' INT TERM
+    
     bash "$temp_script" "${cmd_args[@]}"
     local run_status=$?
     
-    if [ "$run_status" -eq 0 ]; then
+    # Restore default traps
+    trap - INT TERM
+    
+    if [ "$run_status" -eq 0 ] && [ "$interrupted" = "false" ]; then
         mark_install_success "$tool"
+    else
+        echo
+        if [ "$interrupted" = "true" ]; then
+            log_error "Installation of ${display_name} was interrupted."
+            run_status=130
+        else
+            log_error "Installation of ${display_name} failed with exit code $run_status."
+        fi
+        
+        local choice=""
+        if [ -t 0 ]; then
+            while true; do
+                read -r -p "Would you like to [r]ollback partial changes, or [k]eep them to resume/debug later? (r/k): " choice </dev/tty || choice="r"
+                case "$choice" in
+                    [Rr]*)
+                        execute_rollback "$tool"
+                        run_status=1
+                        break
+                        ;;
+                    [Kk]*)
+                        log_info "Keeping partial changes. Run 'b ${tool}' again to resume."
+                        run_status=1
+                        break
+                        ;;
+                    *)
+                        echo "Invalid choice. Please enter 'r' or 'k'."
+                        ;;
+                esac
+            done
+        else
+            # Non-interactive environment, default to safe rollback
+            log_warn "Non-interactive shell detected. Defaulting to automatic rollback to keep system clean."
+            execute_rollback "$tool"
+            run_status=1
+        fi
     fi
     
     # Cleanup

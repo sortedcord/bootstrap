@@ -76,7 +76,7 @@ install_yazi() {
 
         local deb_url="https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-x86_64-unknown-linux-gnu.deb"
         log_info "Downloading Yazi ${latest_tag} from ${deb_url}..."
-            curl -fsSL "$deb_url" -o "$TMP_DIR/yazi.deb"
+        download_file "$deb_url" "$TMP_DIR/yazi.deb"
 
         log_info "Installing Yazi package..."
         sudo apt install -y "$TMP_DIR/yazi.deb"

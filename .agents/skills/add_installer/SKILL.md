@@ -113,7 +113,9 @@ install_<name>() {
     # Use pkg_install for distro packages (it automatically handles rollback hooks!):
     #   pkg_install "arch:<pkg_a>|debian:<pkg_d>|fedora:<pkg_f>"
     
-    # Or manual downloads:
+    # Or manual downloads (always use download_file for resumability!):
+    #   local url="https://..."
+    #   download_file "$url" "$TMP_DIR/binary"
     #   cp "$TMP_DIR/binary" "$HOME/.local/bin/binary"
     #   track_file "$HOME/.local/bin/binary"  # Important for rollback!
 }
@@ -157,6 +159,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 | `confirm "prompt"` | Interactive yes/no prompt, returns 0 for yes |
 | `has_command <cmd>` | Check if a command exists (returns 0/1) |
 | `make_temp_dir` | Create and echo a temp directory path |
+| `download_file <url> <dest>` | Resumable and cached download of `<url>` to `<dest>`. Uses `~/.local/state/bootstrap/cache/`. |
 
 ### From `lib/platform.sh`
 
@@ -214,6 +217,21 @@ if [ -z "$latest_tag" ]; then
     latest_tag="v1.0.0"  # fallback
     log_warn "Failed to fetch latest version. Falling back to: $latest_tag"
 fi
+```
+
+### Resumable Download and Extraction
+
+```bash
+local url="https://github.com/owner/repo/releases/download/${version}/archive.tar.gz"
+local dest="$TMP_DIR/archive.tar.gz"
+
+# Resumable, cached download
+download_file "$url" "$dest"
+
+# Extract and install
+tar -xzf "$dest" -C "$TMP_DIR"
+sudo cp "$TMP_DIR/binary" /usr/local/bin/binary
+track_file "/usr/local/bin/binary"
 ```
 
 ---

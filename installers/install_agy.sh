@@ -96,7 +96,7 @@ install_agy() {
     fi
 
     log_info "Downloading release package..."
-        curl -fsSL "$url" -o "$staging_payload"
+    download_file "$url" "$staging_payload"
 
     # Verify SHA512 Checksum
     local actual_hash

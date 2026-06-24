@@ -79,7 +79,7 @@ install_nvim() {
     local nvim_url="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${nvim_arch}.tar.gz"
 
     log_info "Downloading Neovim v${NVIM_VERSION} for ${arch}..."
-        curl -fsSL "$nvim_url" -o "$TMP_DIR/nvim.tar.gz"
+    download_file "$nvim_url" "$TMP_DIR/nvim.tar.gz"
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 

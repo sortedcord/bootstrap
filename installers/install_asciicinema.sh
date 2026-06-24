@@ -76,7 +76,7 @@ install_asciicinema() {
     local download_url="https://github.com/asciinema/asciinema/releases/download/${latest_tag}/asciinema-${asciinema_arch}"
     
     log_info "Downloading asciinema ${latest_tag} for ${arch}..."
-    curl -fsSL "$download_url" -o "$TMP_DIR/asciinema"
+    download_file "$download_url" "$TMP_DIR/asciinema"
 
     log_info "Installing asciinema to /usr/local/bin..."
     sudo cp "$TMP_DIR/asciinema" /usr/local/bin/asciinema

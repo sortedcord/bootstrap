@@ -20,8 +20,16 @@ setup_uninstaller_context() {
     local tool="$1"
     export BOOTSTRAP_CURRENT_TOOL="$tool"
     export BOOTSTRAP_UNINSTALLER_CMDS="$BOOTSTRAP_UNINSTALLERS_DIR/${tool}.cmds"
-    # Ensure fresh manifest for this run
-    rm -f "$BOOTSTRAP_UNINSTALLER_CMDS"
+    
+    # If a manifest already exists and the tool is NOT marked as successfully installed
+    # in history.log, we treat this as a resumed run. We preserve the manifest so
+    # that new commands are prepended to the existing ones.
+    if [ -f "$BOOTSTRAP_UNINSTALLER_CMDS" ] && ! grep -q "^INSTALL: $tool$" "$BOOTSTRAP_HISTORY_LOG" 2>/dev/null; then
+        log_info "Resuming installation of '$tool'. Preserving existing rollback manifest."
+    else
+        # Fresh installation or reinstall, start with a clean slate
+        rm -f "$BOOTSTRAP_UNINSTALLER_CMDS"
+    fi
     touch "$BOOTSTRAP_UNINSTALLER_CMDS"
 }
 

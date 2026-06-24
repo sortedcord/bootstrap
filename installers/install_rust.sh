@@ -76,7 +76,7 @@ install_rust() {
     local dest="$TMP_DIR/rustup-init"
 
     log_info "Downloading rustup-init..."
-    curl -fsSL "$url" -o "$dest"
+    download_file "$url" "$dest"
 
     chmod +x "$dest"
 

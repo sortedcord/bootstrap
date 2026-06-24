@@ -45,8 +45,7 @@ install_nvm() {
 
     local nvm_url="https://github.com/nvm-sh/nvm/archive/refs/tags/${latest_tag}.tar.gz"
     log_info "Downloading NVM from $nvm_url..."
-
-        curl -fsSL "$nvm_url" -o "$TMP_DIR/nvm.tar.gz"
+    download_file "$nvm_url" "$TMP_DIR/nvm.tar.gz"
 
     log_info "Extracting NVM archive directly to $HOME/.nvm (stripping versioned subfolder to keep config generic)..."
     mkdir -p "$HOME/.nvm"

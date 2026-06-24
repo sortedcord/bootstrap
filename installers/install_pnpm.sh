@@ -34,7 +34,11 @@ trap cleanup EXIT
 # ─── Helper Functions ─────────────────────────────────────────────────
 
 download() {
+    if [ -n "${2:-}" ]; then
+        download_file "$1" "$2"
+    else
         curl -fsSL "$1"
+    fi
 }
 
 is_glibc_compatible() {
@@ -147,7 +151,7 @@ install_pnpm() {
 
     if [ "$major_version" -ge 11 ]; then
         # v11+: distributed as tarballs containing the binary and dist/ directory
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}.tar.gz" > "$TMP_DIR/pnpm.tar.gz" || {
+        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}.tar.gz" "$TMP_DIR/pnpm.tar.gz" || {
             log_error "Failed to download pnpm tarball."
             return 1
         }
@@ -162,7 +166,7 @@ install_pnpm() {
         }
     else
         # Older versions: distributed as a single executable binary
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}" > "$TMP_DIR/pnpm" || {
+        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}" "$TMP_DIR/pnpm" || {
             log_error "Failed to download pnpm binary."
             return 1
         }
