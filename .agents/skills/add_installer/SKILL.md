@@ -18,8 +18,9 @@ bootstrap/
 ├── installers/          # Individual installer scripts (install_<name>.sh)
 ├── lib/                 # Shared libraries and router sourced by all installers
 │   ├── common.sh        # Logging, confirm(), has_command(), make_temp_dir()
-│   ├── platform.sh      # detect_distro(), detect_arch(), pkg_install()
-│   ├── shell_config.sh  # get_shell_configs(), inject_block(), remove_block(), add_alias_if_missing(), add_env_if_missing()
+│   ├── platform.sh      # detect_distro(), detect_arch(), pkg_install(), pkg_check(), pkg_remove()
+│   ├── rollback.sh      # Rollback tracking (track_file, track_dir, add_rollback_cmd)
+│   ├── shell_config.sh  # write_env_snippet, write_alias_snippet
 │   ├── registry.sh      # Dynamically generated installer registry
 │   └── routes.sh        # Central router script
 ├── commands/            # Non-installer commands (help, con, uninstall)
@@ -55,7 +56,15 @@ At the top of your new installer script, right below `#!/usr/bin/env bash`, add 
 
 The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
 
-### Step 3: Verify (optional)
+### Step 3: Implement Rollback Tracking (Crucial)
+
+To ensure the user can seamlessly use `b rb <name>`, all manual modifications must be tracked:
+- When extracting binaries to `~/.local/bin/`, use `track_file "$HOME/.local/bin/binary"`.
+- When creating directories like `~/.config/tool/`, use `track_dir "$HOME/.config/tool"`.
+- When running manual apt/dnf/npm commands, log their inverses: `add_rollback_cmd "sudo npm uninstall -g package"`.
+Note: `pkg_install`, `write_env_snippet`, and `write_alias_snippet` will automatically track themselves.
+
+### Step 4: Verify (optional)
 
 Verify that the installer works and appears in the help output:
 - Run `b all` to confirm it appears in the help list.
@@ -101,35 +110,21 @@ install_<name>() {
     fi
 
     # --- Tool-specific installation logic goes here ---
-    # Use pkg_install for distro packages:
-    #   pkg_install <package>
-    # Use detect_distro for distro-specific logic:
-    #   local distro; distro=$(detect_distro)
-    # Use detect_arch for arch-specific logic:
-    #   local arch; arch=$(detect_arch)
-    # For GitHub releases, use curl pattern (see bat installer for reference)
+    # Use pkg_install for distro packages (it automatically handles rollback hooks!):
+    #   pkg_install "arch:<pkg_a>|debian:<pkg_d>|fedora:<pkg_f>"
+    
+    # Or manual downloads:
+    #   cp "$TMP_DIR/binary" "$HOME/.local/bin/binary"
+    #   track_file "$HOME/.local/bin/binary"  # Important for rollback!
 }
 
 # ─── Shell Configuration (if needed) ─────────────────────────────────
 
 configure_shell() {
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-
-    for config_file in "${target_files[@]}"; do
-        log_info "Configuring <ToolName> in $config_file..."
-
-        # Use inject_block to add shell init/aliases/env vars:
-        #   inject_block "$config_file" "<name> init" "<content>"
-        # Use add_alias_if_missing for simple aliases:
-        #   add_alias_if_missing "$config_file" "<alias>" "<value>"
-        # Use add_env_if_missing for environment variables:
-        #   add_env_if_missing "$config_file" "VAR_NAME" "value"
-
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            . "$config_file" 2>/dev/null || true
-        fi
-    done
+    # Use drop-in snippets for shell configuration (they auto-rollback)
+    # write_env_snippet "<name>" "export VAR_NAME=value\neval \"\$(<name> init bash)\""
+    # write_alias_snippet "<name>" "alias <name>='<command>'"
+    :
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────
@@ -169,18 +164,23 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 |---|---|
 | `detect_distro` | Echoes `arch`, `debian`, `fedora`, or `unknown` |
 | `detect_arch` | Echoes `x86_64` or `arm64` |
-| `pkg_install <pkg>...` | Install packages via the system package manager. Supports distro-specific mapping: `"arch:pkg_a\|debian:pkg_d\|fedora:pkg_f"` |
+| `pkg_install <pkg>...` | Install packages. Supports distro mapping: `"arch:pkg_a\|debian:pkg_d\|fedora:pkg_f"`. Automatically integrates with rollback context and handles package reference counting. |
+| `pkg_check <pkg>...` | Returns 0 if packages are installed. Supports identical mapping syntax. |
+
+### From `lib/rollback.sh`
+
+| Function | Description |
+|---|---|
+| `track_file <path>` | Registers a file for deletion during `b rb` rollback. |
+| `track_dir <path>` | Registers a directory for recursive deletion during rollback. |
+| `add_rollback_cmd <cmd>` | Adds a raw bash command to the uninstall manifest (e.g., `add_rollback_cmd "sudo npm uninstall -g <pkg>"`). |
 
 ### From `lib/shell_config.sh`
 
 | Function | Description |
 |---|---|
-| `get_shell_configs` | Space-separated list of existing RC files (`~/.bashrc`) |
-| `inject_block <file> <name> <content>` | Idempotently inject a named block into a config file (removes old block first) |
-| `remove_block <file> <name>` | Remove a named block from a config file |
-| `add_alias_if_missing <file> <alias> <value>` | Add an alias line if not already present |
-| `add_env_if_missing <file> <var> <value>` | Add an `export VAR="value"` line if not already present |
-| `create_fd_symlink` | Symlink `fdfind` → `fd` on Debian/Ubuntu |
+| `write_env_snippet <name> <content>` | Creates an isolated `env.d/` shell drop-in snippet and registers it for rollback. |
+| `write_alias_snippet <name> <content>` | Creates an isolated `aliases.d/` shell drop-in snippet and registers it for rollback. |
 
 ---
 
@@ -194,27 +194,10 @@ cleanup() { rm -rf "$TMP_DIR"; }
 trap cleanup EXIT
 ```
 
-### Distro-specific installation (e.g., GitHub .deb for Debian, pacman for Arch)
+### Distro-specific mapping
 
 ```bash
-local distro
-distro=$(detect_distro)
-
-case "$distro" in
-    arch)
-        pkg_install <package>
-        ;;
-    debian)
-        # Download .deb from GitHub releases
-        ;;
-    fedora)
-        pkg_install <package>
-        ;;
-    *)
-        log_error "Unsupported distribution."
-        exit 1
-        ;;
-esac
+pkg_install "arch:neovim|debian:nvim|fedora:neovim" "curl" "git"
 ```
 
 ### Fetching latest GitHub release tag
@@ -233,23 +216,15 @@ if [ -z "$latest_tag" ]; then
 fi
 ```
 
-### Shell block injection (idempotent)
-
-```bash
-# Block name should be unique and descriptive
-inject_block "$config_file" "<tool> init" 'eval "$(tool init bash)"'
-```
-
 ---
 
 ## Rules & Conventions
 
 1. **File naming**: Always `install_<name>.sh` in the `installers/` directory.
-2. **Registry generation**: The registry in `lib/registry.sh` is automatically generated by `scripts/generate_registry.sh` (run automatically on commit by the git pre-commit hook).
-3. **Confirmation prompts**: Always ask before installing. Check if already installed first.
-4. **Idempotent**: Installers must be safe to re-run. Use `inject_block` (not append) for shell configs.
+2. **Confirmation prompts**: Always ask before installing. Check if already installed first.
+3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `~/.local/bin/`, you MUST call `track_file`. If you run `makepkg`, you MUST call `add_rollback_cmd` for `pacman -R`.
+4. **Shell Drop-ins**: Always use `write_env_snippet` or `write_alias_snippet` instead of manually injecting code directly into `~/.bashrc`.
 5. **No hardcoded paths**: Use `$HOME`, library functions, and `detect_*` helpers.
 6. **Error handling**: Use `set -euo pipefail` after the guard block.
 7. **CLI Enforcement Guard**: Always copy the standalone execution guard block verbatim to the top of your installer script to prevent direct execution.
-8. **`main "$@"`**: Always end with this pattern to pass through CLI arguments.
-9. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.
+8. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.
