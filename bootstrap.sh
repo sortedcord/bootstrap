@@ -41,7 +41,7 @@ else
     BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_TMP_DIR"
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-    _LIBS=("lib/common.sh" "lib/platform.sh" "lib/shell_config.sh")
+    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh")
     
     _curl_args=()
     for _lib in "${_LIBS[@]}"; do
@@ -53,8 +53,10 @@ fi
 
 if [ -f "$BOOTSTRAP_SOURCE_DIR/lib/common.sh" ]; then
     . "$BOOTSTRAP_SOURCE_DIR/lib/common.sh"
+    . "$BOOTSTRAP_SOURCE_DIR/lib/rollback.sh"
     . "$BOOTSTRAP_SOURCE_DIR/lib/platform.sh"
     . "$BOOTSTRAP_SOURCE_DIR/lib/shell_config.sh"
+    init_rollback_system
 else
     echo "Error: Failed to locate or download bootstrap libraries." >&2
     exit 1
@@ -77,6 +79,7 @@ install_bootstrap() {
         "lib/routes.sh"
         "lib/registry.sh"
         "lib/common.sh"
+        "lib/rollback.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
         "commands/help.sh"

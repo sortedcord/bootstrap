@@ -81,17 +81,40 @@ pkg_install() {
         return 0
     fi
 
-    log_info "Installing packages via $distro package manager: ${pkgs[*]}"
+    local to_install=()
+    for pkg in "${pkgs[@]}"; do
+        if ! pkg_check "$pkg"; then
+            to_install+=("$pkg")
+        fi
+        
+        # Reference counting logic
+        if [ -n "${BOOTSTRAP_CURRENT_TOOL:-}" ] && [ -n "${BOOTSTRAP_PACKAGES_DIR:-}" ]; then
+            local ref_file="$BOOTSTRAP_PACKAGES_DIR/$pkg"
+            if ! grep -q "^${BOOTSTRAP_CURRENT_TOOL}$" "$ref_file" 2>/dev/null; then
+                echo "$BOOTSTRAP_CURRENT_TOOL" >> "$ref_file"
+                # Register rollback command
+                if type add_rollback_cmd >/dev/null 2>&1; then
+                    add_rollback_cmd "pkg_remove $pkg"
+                fi
+            fi
+        fi
+    done
+
+    if [ ${#to_install[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    log_info "Installing packages via $distro package manager: ${to_install[*]}"
     case "$distro" in
         arch)
-            sudo pacman -Sy --needed --noconfirm "${pkgs[@]}"
+            sudo pacman -Sy --needed --noconfirm "${to_install[@]}"
             ;;
         debian)
             sudo apt update
-            sudo apt install -y "${pkgs[@]}"
+            sudo apt install -y "${to_install[@]}"
             ;;
         fedora)
-            sudo dnf install -y "${pkgs[@]}"
+            sudo dnf install -y "${to_install[@]}"
             ;;
     esac
 }
@@ -144,24 +167,47 @@ pkg_remove() {
         return 0
     fi
 
-    log_info "Removing packages via $distro package manager: ${pkgs[*]}"
+    local to_remove=()
+    for pkg in "${pkgs[@]}"; do
+        if [ -n "${BOOTSTRAP_CURRENT_TOOL:-}" ] && [ -n "${BOOTSTRAP_PACKAGES_DIR:-}" ]; then
+            local ref_file="$BOOTSTRAP_PACKAGES_DIR/$pkg"
+            if [ -f "$ref_file" ]; then
+                # Remove this tool from the reference file
+                sed -i "/^${BOOTSTRAP_CURRENT_TOOL}$/d" "$ref_file"
+                if [ -s "$ref_file" ]; then
+                    log_info "Skipping removal of '$pkg'; it is required by other tools."
+                    continue
+                else
+                    rm -f "$ref_file"
+                fi
+            fi
+        fi
+        
+        to_remove+=("$pkg")
+    done
+
+    if [ ${#to_remove[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    log_info "Removing packages via $distro package manager: ${to_remove[*]}"
     case "$distro" in
         arch)
-            local to_remove=()
-            for pkg in "${pkgs[@]}"; do
+            local pac_remove=()
+            for pkg in "${to_remove[@]}"; do
                 if pacman -Qq "$pkg" >/dev/null 2>&1; then
-                    to_remove+=("$pkg")
+                    pac_remove+=("$pkg")
                 fi
             done
-            if [ ${#to_remove[@]} -gt 0 ]; then
-                sudo pacman -R --noconfirm "${to_remove[@]}"
+            if [ ${#pac_remove[@]} -gt 0 ]; then
+                sudo pacman -R --noconfirm "${pac_remove[@]}"
             fi
             ;;
         debian)
-            sudo apt remove -y "${pkgs[@]}"
+            sudo apt remove -y "${to_remove[@]}"
             ;;
         fedora)
-            sudo dnf remove -y "${pkgs[@]}"
+            sudo dnf remove -y "${to_remove[@]}"
             ;;
     esac
 }

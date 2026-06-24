@@ -112,6 +112,10 @@ write_env_snippet() {
     mkdir -p "$dir"
     log_info "Writing environment snippet '$name' to $dir/${name}.sh"
     echo "$content" > "$dir/${name}.sh"
+    
+    if type add_rollback_cmd >/dev/null 2>&1; then
+        add_rollback_cmd "rm -f \"$dir/${name}.sh\""
+    fi
 }
 
 # Write alias snippet to aliases.d/
@@ -124,6 +128,10 @@ write_alias_snippet() {
     mkdir -p "$dir"
     log_info "Writing alias snippet '$name' to $dir/${name}.sh"
     echo "$content" > "$dir/${name}.sh"
+    
+    if type add_rollback_cmd >/dev/null 2>&1; then
+        add_rollback_cmd "rm -f \"$dir/${name}.sh\""
+    fi
 }
 
 # Remove environment snippet from env.d/

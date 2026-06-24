@@ -14,8 +14,10 @@ export BOOTSTRAP_DIR
 # Source libraries
 if [ -f "$BOOTSTRAP_DIR/lib/common.sh" ]; then
     . "$BOOTSTRAP_DIR/lib/common.sh"
+    . "$BOOTSTRAP_DIR/lib/rollback.sh"
     . "$BOOTSTRAP_DIR/lib/platform.sh"
     . "$BOOTSTRAP_DIR/lib/shell_config.sh"
+    init_rollback_system
 else
     echo "Error: Bootstrap libraries not found at $BOOTSTRAP_DIR/lib/" >&2
     exit 1
@@ -111,8 +113,13 @@ run_ware() {
 
     # Run the script (edited or unchanged)
     log_info "Running ${display_name} installer..."
+    setup_uninstaller_context "$tool"
     bash "$temp_script" "${cmd_args[@]}"
     local run_status=$?
+    
+    if [ "$run_status" -eq 0 ]; then
+        mark_install_success "$tool"
+    fi
     
     # Cleanup
     rm -f "$temp_script"
@@ -192,6 +199,24 @@ for script in "${SCRIPTS[@]}"; do
                     log_error "Uninstall command script not found."
                     exit 1
                 fi
+                ;;
+            fall)
+                local savepoint_name="${1:-}"
+                if [ -z "$savepoint_name" ]; then
+                    log_error "Usage: b fall <savepoint_name>"
+                    exit 1
+                fi
+                create_savepoint "$savepoint_name"
+                exit 0
+                ;;
+            rb)
+                local target="${1:-}"
+                if [ -z "$target" ]; then
+                    rollback_bare
+                else
+                    rollback_to_savepoint "$target"
+                fi
+                exit 0
                 ;;
             *)
                 log_error "Unknown command '$script'."
