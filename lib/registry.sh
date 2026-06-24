@@ -2,6 +2,7 @@
 
 declare -A INSTALLERS=(
     [agy]="Antigravity CLI"
+    [asciicinema]="asciinema terminal recorder"
     [bat]="Bat (alternative to cat) and configure alias"
     [node]="Node.js (LTS) and NVM"
     [nvim]="Neovim 0.12.0 and configuration"
@@ -16,6 +17,7 @@ declare -A INSTALLERS=(
 
 declare -A INSTALLER_DISPLAYS=(
     [agy]="Antigravity"
+    [asciicinema]="asciicinema"
     [bat]="Bat"
     [node]="Node"
     [nvim]="Neovim"
@@ -28,4 +30,4 @@ declare -A INSTALLER_DISPLAYS=(
     [zoxide]="Zoxide"
 )
 
-INSTALLER_KEYS=(agy bat node nvim pnpm rust starship uv yay yazi zoxide)
+INSTALLER_KEYS=(agy asciicinema bat node nvim pnpm rust starship uv yay yazi zoxide)
