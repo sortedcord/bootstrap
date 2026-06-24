@@ -85,6 +85,8 @@ install_rust() {
     # -y: skip prompts (we already confirmed)
     # --no-modify-path: let bootstrap manage the shell paths
     "$dest" -y --no-modify-path
+    
+    add_rollback_cmd "rustup self uninstall -y"
 }
 
 configure_shell() {

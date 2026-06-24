@@ -71,6 +71,7 @@ install_starship() {
     log_info "Installing Starship to $target_dir/starship..."
     cp "$TMP_DIR/starship" "$target_dir/starship"
     chmod +x "$target_dir/starship"
+    track_file "$target_dir/starship"
 }
 
 configure_shell() {

@@ -80,6 +80,7 @@ install_yazi() {
 
         log_info "Installing Yazi package..."
         sudo apt install -y "$TMP_DIR/yazi.deb"
+        add_rollback_cmd "sudo apt remove -y yazi"
 
         log_info "Installing dependencies subsequently..."
         pkg_install ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick 7zip || \
@@ -101,6 +102,7 @@ install_yazi() {
 
         log_info "Installing Yazi (without weak dependencies first)..."
         sudo dnf install -y yazi --setopt=install_weak_deps=False
+        add_rollback_cmd "sudo dnf remove -y yazi"
 
         log_info "Installing weak dependencies subsequently..."
         pkg_install yazi

@@ -173,6 +173,7 @@ install_pnpm() {
         }
     fi
 
+    track_dir "$HOME/.local/share/pnpm"
     log_success "pnpm v${version} installed successfully!"
 }
 

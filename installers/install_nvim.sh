@@ -47,6 +47,7 @@ install_packages() {
 
     log_info "Installing tree-sitter-cli globally..."
     sudo npm install -g tree-sitter-cli
+    add_rollback_cmd "sudo npm uninstall -g tree-sitter-cli"
 }
 
 install_nvim() {
@@ -86,6 +87,9 @@ install_nvim() {
     sudo mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
 
     sudo ln -sf "$NVIM_INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
+    
+    track_dir "$NVIM_INSTALL_DIR"
+    track_file "/usr/local/bin/nvim"
 
     log_success "Installed:"
     nvim --version | head -n1
@@ -102,6 +106,7 @@ install_config() {
 
     log_info "Cloning configuration to $NVIM_CONFIG_DIR..."
     git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG_DIR"
+    track_dir "$NVIM_CONFIG_DIR"
     log_success "Configuration installed."
 }
 

@@ -81,6 +81,8 @@ install_uv() {
     cp "$TMP_DIR/uv" "$target_dir/uv"
     cp "$TMP_DIR/uvx" "$target_dir/uvx"
     chmod +x "$target_dir/uv" "$target_dir/uvx"
+    track_file "$target_dir/uv"
+    track_file "$target_dir/uvx"
 }
 
 configure_shell() {

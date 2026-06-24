@@ -61,6 +61,7 @@ install_yay() {
 
     log_info "Building and installing yay..."
     makepkg -si
+    add_rollback_cmd "sudo pacman -R --noconfirm yay"
 
     cd "$orig_dir"
     log_info "Cleaning up installer directory..."

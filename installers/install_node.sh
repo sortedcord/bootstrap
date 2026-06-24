@@ -51,6 +51,8 @@ install_nvm() {
     log_info "Extracting NVM archive directly to $HOME/.nvm (stripping versioned subfolder to keep config generic)..."
     mkdir -p "$HOME/.nvm"
     tar -xzf "$TMP_DIR/nvm.tar.gz" -C "$HOME/.nvm" --strip-components=1
+    
+    track_dir "$HOME/.nvm"
 
     log_success "NVM source files successfully extracted to $HOME/.nvm."
 }

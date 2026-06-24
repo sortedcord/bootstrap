@@ -67,6 +67,7 @@ install_bat() {
 
         log_info "Installing Bat package..."
         sudo apt install -y "$TMP_DIR/bat.deb"
+        add_rollback_cmd "sudo apt remove -y bat"
 
     else
         log_error "Unsupported distribution."

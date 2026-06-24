@@ -130,6 +130,8 @@ install_agy() {
     cp "$extracted_binary" "$BINARY_PATH"
     chmod +x "$BINARY_PATH"
     rm -rf "$staging_dir"
+    
+    track_file "$BINARY_PATH"
 
     log_success "Antigravity CLI successfully installed to $BINARY_PATH."
 }
