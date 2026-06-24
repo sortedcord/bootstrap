@@ -21,7 +21,11 @@ cleanup() {
 trap cleanup EXIT
 
 add_y_wrapper() {
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
+    for config_file in "${target_files[@]}"; do
+        remove_block "$config_file" "yazi wrapper"
+    done
 
     local wrapper_content
     wrapper_content=$(cat << 'EOF'
@@ -37,16 +41,7 @@ y() {
 EOF
 )
 
-    for config_file in "${target_files[@]}"; do
-        log_info "Adding yazi wrapper function 'y' to $config_file..."
-        inject_block "$config_file" "yazi wrapper" "$wrapper_content"
-    done
-
-    # Source ~/.bashrc to make the alias immediately available in the current shell context (if sourced)
-    if [ -f "$HOME/.bashrc" ]; then
-        log_info "Sourcing ~/.bashrc..."
-        . "$HOME/.bashrc" 2>/dev/null || true
-    fi
+    write_alias_snippet "yazi" "$wrapper_content"
 }
 
 install_yazi() {

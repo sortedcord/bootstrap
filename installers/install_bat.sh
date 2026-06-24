@@ -75,31 +75,16 @@ install_bat() {
 }
 
 configure_shell() {
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-
-    local content="alias cat='bat --paging=never -p'"
-
     for config_file in "${target_files[@]}"; do
-        local target_file="$config_file"
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            # Clean up old block from ~/.bashrc if present to avoid duplication
-            remove_block "$config_file" "bat alias"
-            target_file="$HOME/.bash_aliases"
-            # Ensure the file exists
-            if [ ! -f "$target_file" ]; then
-                touch "$target_file"
-            fi
-        fi
-
-        log_info "Adding bat alias to $target_file..."
-        inject_block "$target_file" "bat alias" "$content"
-        
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            log_info "Sourcing $config_file..."
-            . "$config_file" 2>/dev/null || true
-        fi
+        remove_block "$config_file" "bat alias"
     done
+    if [ -f "$HOME/.bash_aliases" ]; then
+        remove_block "$HOME/.bash_aliases" "bat alias"
+    fi
+
+    write_alias_snippet "bat" "alias cat='bat --paging=never -p'"
 }
 
 main() {

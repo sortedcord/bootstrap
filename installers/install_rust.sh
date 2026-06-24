@@ -91,19 +91,13 @@ configure_shell() {
     # Add ~/.cargo/bin to PATH for the current process
     export PATH="$HOME/.cargo/bin:$PATH"
 
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-
     for config_file in "${target_files[@]}"; do
-        log_info "Configuring Rust environment in $config_file..."
-        local content='. "$HOME/.cargo/env"'
-        
-        inject_block "$config_file" "rust init" "$content"
-
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            . "$config_file" 2>/dev/null || true
-        fi
+        remove_block "$config_file" "rust init"
     done
+
+    write_env_snippet "rust" '. "$HOME/.cargo/env"'
 }
 
 main() {

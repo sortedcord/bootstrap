@@ -56,7 +56,11 @@ install_nvm() {
 }
 
 configure_shell() {
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
+    for config_file in "${target_files[@]}"; do
+        remove_block "$config_file" "nvm setup"
+    done
 
     local content
     content=$(cat << 'EOF'
@@ -66,16 +70,7 @@ export NVM_DIR="$HOME/.nvm"
 EOF
 )
 
-    for config_file in "${target_files[@]}"; do
-        log_info "Adding NVM configuration block to $config_file..."
-        inject_block "$config_file" "nvm setup" "$content"
-        
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            log_info "Sourcing $config_file..."
-            . "$config_file" 2>/dev/null || true
-        fi
-    done
+    write_env_snippet "node" "$content"
 }
 
 install_node() {

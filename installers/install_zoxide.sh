@@ -46,19 +46,14 @@ configure_shell() {
     # Add ~/.local/bin to PATH for the current process
     export PATH="$HOME/.local/bin:$PATH"
 
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-
     for config_file in "${target_files[@]}"; do
-        log_info "Adding zoxide initialization to $config_file..."
-        local content="eval \"\$(zoxide init --cmd cd bash)\""
-        
-        inject_block "$config_file" "zoxide init" "$content"
-
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            . "$config_file" 2>/dev/null || true
-        fi
+        remove_block "$config_file" "zoxide init"
     done
+
+    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
+    write_env_snippet "zoxide" 'eval "$(zoxide init --cmd cd bash)"'
 }
 
 main() {

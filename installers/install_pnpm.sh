@@ -179,7 +179,11 @@ install_pnpm() {
 # ─── Shell Configuration ─────────────────────────────────────────────
 
 configure_shell() {
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
+    for config_file in "${target_files[@]}"; do
+        remove_block "$config_file" "pnpm setup"
+    done
 
     # pnpm's `setup --force` configures PNPM_HOME and PATH automatically,
     # but we also add an env block to ensure PNPM_HOME is set consistently.
@@ -194,15 +198,7 @@ esac
 EOF
 )
 
-    for config_file in "${target_files[@]}"; do
-        log_info "Configuring pnpm in $config_file..."
-        inject_block "$config_file" "pnpm setup" "$content"
-
-        # Source if modified (only for bashrc)
-        if [ "$config_file" = "$HOME/.bashrc" ]; then
-            . "$config_file" 2>/dev/null || true
-        fi
-    done
+    write_env_snippet "pnpm" "$content"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

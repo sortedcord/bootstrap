@@ -135,22 +135,13 @@ install_agy() {
 }
 
 configure_shell() {
-    # Ensure $TARGET_DIR is in PATH for shell configurations if not present
+    # Clean up legacy in-place configuration blocks
     IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    
-    local path_content='export PATH="$HOME/.local/bin:$PATH"'
-    
     for config_file in "${target_files[@]}"; do
-        if [ -f "$config_file" ] && ! grep -q '\.local/bin' "$config_file" 2>/dev/null; then
-            log_info "Adding ~/.local/bin to PATH in $config_file..."
-            inject_block "$config_file" "local-bin path" "$path_content"
-            
-            # Source if modified (only for bashrc)
-            if [ "$config_file" = "$HOME/.bashrc" ]; then
-                . "$config_file" 2>/dev/null || true
-            fi
-        fi
+        remove_block "$config_file" "local-bin path"
     done
+
+    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
 }
 
 run_handoff() {

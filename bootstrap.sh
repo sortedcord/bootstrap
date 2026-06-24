@@ -67,6 +67,8 @@ install_bootstrap() {
 
     local routes_dir="$HOME/.config/bootstrap"
     mkdir -p "$routes_dir"
+    mkdir -p "$routes_dir/env.d"
+    mkdir -p "$routes_dir/aliases.d"
 
     # List of all files to download/copy
     local files=(
@@ -126,13 +128,15 @@ install_bootstrap() {
         # 2. Clean up old loader block if it exists
         remove_block "$config_file" "bootstrap-cli setup"
 
-        # 3. Append the new lightweight loader block
+        # 3. Append the new lightweight loader block that sources modular configs
         log_info "Adding bootstrap loader to $config_file..."
         cat << 'EOF' >> "$config_file"
 
 # >>> bootstrap-cli setup >>>
 export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
+for f in "$BOOTSTRAP_DIR/env.d/"*.sh; do [ -r "$f" ] && . "$f"; done
+for f in "$BOOTSTRAP_DIR/aliases.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 # <<< bootstrap-cli setup <<<
 EOF
 

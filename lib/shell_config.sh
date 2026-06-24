@@ -102,6 +102,54 @@ add_env_if_missing() {
     return 1 # Not added
 }
 
+# Write environment snippet to env.d/
+# Usage: write_env_snippet <name> <content>
+write_env_snippet() {
+    local name="$1"
+    local content="$2"
+    local dir="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/env.d"
+
+    mkdir -p "$dir"
+    log_info "Writing environment snippet '$name' to $dir/${name}.sh"
+    echo "$content" > "$dir/${name}.sh"
+}
+
+# Write alias snippet to aliases.d/
+# Usage: write_alias_snippet <name> <content>
+write_alias_snippet() {
+    local name="$1"
+    local content="$2"
+    local dir="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/aliases.d"
+
+    mkdir -p "$dir"
+    log_info "Writing alias snippet '$name' to $dir/${name}.sh"
+    echo "$content" > "$dir/${name}.sh"
+}
+
+# Remove environment snippet from env.d/
+# Usage: remove_env_snippet <name>
+remove_env_snippet() {
+    local name="$1"
+    local dir="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/env.d"
+
+    if [ -f "$dir/${name}.sh" ]; then
+        log_info "Removing environment snippet '$name'"
+        rm -f "$dir/${name}.sh"
+    fi
+}
+
+# Remove alias snippet from aliases.d/
+# Usage: remove_alias_snippet <name>
+remove_alias_snippet() {
+    local name="$1"
+    local dir="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/aliases.d"
+
+    if [ -f "$dir/${name}.sh" ]; then
+        log_info "Removing alias snippet '$name'"
+        rm -f "$dir/${name}.sh"
+    fi
+}
+
 # Setup fd symlink for Debian/Ubuntu (fdfind -> fd)
 create_fd_symlink() {
     if ! has_command fd && has_command fdfind; then
@@ -112,5 +160,6 @@ create_fd_symlink() {
 
 # Export functions and variables for subshells
 export _LIB_SHELL_CONFIG_SOURCED=1
-export -f get_shell_configs remove_block inject_block add_alias_if_missing add_env_if_missing create_fd_symlink
+export -f get_shell_configs remove_block inject_block add_alias_if_missing add_env_if_missing create_fd_symlink write_env_snippet write_alias_snippet remove_env_snippet remove_alias_snippet
+
 
