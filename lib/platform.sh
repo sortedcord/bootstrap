@@ -36,18 +36,9 @@ detect_arch() {
     esac
 }
 
-# Install packages depending on detected distro
-# Usage: pkg_install <package_name_arch> <package_name_debian> <package_name_fedora>
-# Or simpler: map common packages to their distro equivalents
-pkg_install() {
-    local distro
-    distro=$(detect_distro)
-    
-    if [ "$distro" = "unknown" ]; then
-        log_error "Unsupported distribution. Cannot install packages automatically."
-        return 1
-    fi
-
+_resolve_pkg_names() {
+    local distro="$1"
+    shift
     local pkgs=()
     for arg in "$@"; do
         # Format can be "pkg" or "arch:pkg_a|debian:pkg_d|fedora:pkg_f"
@@ -69,6 +60,22 @@ pkg_install() {
             pkgs+=("$arg")
         fi
     done
+    echo "${pkgs[@]}"
+}
+
+# Install packages depending on detected distro
+# Usage: pkg_install <package_name_arch> <package_name_debian> <package_name_fedora>
+# Or simpler: map common packages to their distro equivalents
+pkg_install() {
+    local distro
+    distro=$(detect_distro)
+    
+    if [ "$distro" = "unknown" ]; then
+        log_error "Unsupported distribution. Cannot install packages automatically."
+        return 1
+    fi
+
+    IFS=' ' read -ra pkgs <<< "$(_resolve_pkg_names "$distro" "$@")"
 
     if [ ${#pkgs[@]} -eq 0 ]; then
         return 0
@@ -89,7 +96,77 @@ pkg_install() {
     esac
 }
 
+# Check if packages are installed
+# Returns 0 if all are installed, 1 otherwise
+pkg_check() {
+    local distro
+    distro=$(detect_distro)
+    
+    if [ "$distro" = "unknown" ]; then
+        return 1
+    fi
+
+    IFS=' ' read -ra pkgs <<< "$(_resolve_pkg_names "$distro" "$@")"
+
+    if [ ${#pkgs[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    case "$distro" in
+        arch)
+            pacman -Qq "${pkgs[@]}" >/dev/null 2>&1
+            return $?
+            ;;
+        debian)
+            dpkg -s "${pkgs[@]}" >/dev/null 2>&1
+            return $?
+            ;;
+        fedora)
+            rpm -q "${pkgs[@]}" >/dev/null 2>&1
+            return $?
+            ;;
+    esac
+}
+
+# Remove packages depending on detected distro
+pkg_remove() {
+    local distro
+    distro=$(detect_distro)
+    
+    if [ "$distro" = "unknown" ]; then
+        log_error "Unsupported distribution. Cannot remove packages automatically."
+        return 1
+    fi
+
+    IFS=' ' read -ra pkgs <<< "$(_resolve_pkg_names "$distro" "$@")"
+
+    if [ ${#pkgs[@]} -eq 0 ]; then
+        return 0
+    fi
+
+    log_info "Removing packages via $distro package manager: ${pkgs[*]}"
+    case "$distro" in
+        arch)
+            local to_remove=()
+            for pkg in "${pkgs[@]}"; do
+                if pacman -Qq "$pkg" >/dev/null 2>&1; then
+                    to_remove+=("$pkg")
+                fi
+            done
+            if [ ${#to_remove[@]} -gt 0 ]; then
+                sudo pacman -R --noconfirm "${to_remove[@]}"
+            fi
+            ;;
+        debian)
+            sudo apt remove -y "${pkgs[@]}"
+            ;;
+        fedora)
+            sudo dnf remove -y "${pkgs[@]}"
+            ;;
+    esac
+}
+
 # Export functions and variables for subshells
 export _LIB_PLATFORM_SOURCED=1
-export -f detect_distro detect_arch pkg_install
+export -f detect_distro detect_arch _resolve_pkg_names pkg_install pkg_check pkg_remove
 
