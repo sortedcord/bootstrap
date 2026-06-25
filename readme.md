@@ -109,7 +109,7 @@ b up
 b up --force
 ```
 
-### Plugins (`b <plugin_name>`)
+## Plugins (`b <plugin_name>`)
 
 Plugins are first-party or third-party applications written to work directly with `bootstrap`. Unlike installers (or packages) which modify your system by compiling code, downloading binaries, and altering shell configuration files, **plugins are lazy-loaded scripts that execute within a subshell**. 
 
@@ -131,7 +131,7 @@ b my_plugin
 
 Plugins are automatically checked for updates and lazily re-downloaded whenever you run `b up`.
 
-If you prefer to run a plugin strictly in **ephemeral mode** (meaning it will bypass the cache, download to a temporary location, execute, and then delete itself to save space and guarantee the absolute latest version), simply pass the `-e` or `--ephemeral` flag:
+If you prefer to run a plugin strictly in **ephemeral mode** (meaning it will bypass the cache and execute directly in memory to guarantee the absolute latest version without leaving any footprint), simply pass the `-e` or `--ephemeral` flag:
 
 ```bash
 b my_plugin -e

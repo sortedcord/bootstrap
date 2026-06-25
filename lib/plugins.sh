@@ -139,20 +139,25 @@ run_plugin() {
         return 1
     fi
     
-    local local_plugin
-    
     if [ "$is_ephemeral" = "true" ]; then
-        log_info "Downloading plugin '$plugin_name' (ephemeral)..."
-        local_plugin=$(mktemp --suffix=".sh" 2>/dev/null || mktemp)
-        if ! curl -fsSL "$url" -o "$local_plugin"; then
+        log_info "Downloading and running plugin '$plugin_name' (ephemeral)..."
+        local script_content
+        if ! script_content=$(curl -fsSL "$url"); then
             log_error "Failed to download plugin '$plugin_name' from $url"
-            rm -f "$local_plugin"
             return 1
         fi
-        chmod +x "$local_plugin"
+        
+        # Execute the plugin directly in memory in a subshell
+        (
+            export BOOTSTRAP_DIR
+            # We use bash -c and pass the script content to keep stdin free for interactive plugins
+            # The "$0" arg for bash -c is set to the plugin name
+            bash -c "$script_content" "$plugin_name" "${cmd_args[@]}"
+        )
+        return $?
     else
         local plugin_dir="$BOOTSTRAP_DIR/plugins"
-        local_plugin="$plugin_dir/${plugin_name}.sh"
+        local local_plugin="$plugin_dir/${plugin_name}.sh"
         
         if [ ! -f "$local_plugin" ]; then
             log_info "Downloading plugin '$plugin_name'..."
@@ -164,20 +169,13 @@ run_plugin() {
             fi
             chmod +x "$local_plugin"
         fi
+        
+        log_info "Running plugin '$plugin_name'..."
+        # Execute the plugin in a subshell, passing any additional arguments
+        (
+            export BOOTSTRAP_DIR
+            bash "$local_plugin" "${cmd_args[@]}"
+        )
+        return $?
     fi
-    
-    log_info "Running plugin '$plugin_name'..."
-    # Execute the plugin in a subshell, passing any additional arguments
-    (
-        export BOOTSTRAP_DIR
-        bash "$local_plugin" "${cmd_args[@]}"
-    )
-    local ret=$?
-    
-    if [ "$is_ephemeral" = "true" ]; then
-        rm -f "$local_plugin"
-    fi
-    
-    return $ret
 }
-
