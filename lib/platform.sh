@@ -169,21 +169,33 @@ pkg_remove() {
 
     local to_remove=()
     for pkg in "${pkgs[@]}"; do
+        local is_installed=0
+        if pkg_check "$pkg"; then
+            is_installed=1
+        fi
+
         if [ -n "${BOOTSTRAP_CURRENT_TOOL:-}" ] && [ -n "${BOOTSTRAP_PACKAGES_DIR:-}" ]; then
             local ref_file="$BOOTSTRAP_PACKAGES_DIR/$pkg"
             if [ -f "$ref_file" ]; then
-                # Remove this tool from the reference file
-                sed -i "/^${BOOTSTRAP_CURRENT_TOOL}$/d" "$ref_file"
-                if [ -s "$ref_file" ]; then
-                    log_info "Skipping removal of '$pkg'; it is required by other tools."
-                    continue
-                else
+                if [ "$is_installed" -eq 0 ]; then
+                    log_info "Package '$pkg' is no longer installed system-wide. Cleaning up stale reference."
                     rm -f "$ref_file"
+                else
+                    # Remove this tool from the reference file
+                    sed -i "/^${BOOTSTRAP_CURRENT_TOOL}$/d" "$ref_file"
+                    if [ -s "$ref_file" ]; then
+                        log_info "Skipping removal of '$pkg'; it is required by other tools."
+                        continue
+                    else
+                        rm -f "$ref_file"
+                    fi
                 fi
             fi
         fi
         
-        to_remove+=("$pkg")
+        if [ "$is_installed" -eq 1 ]; then
+            to_remove+=("$pkg")
+        fi
     done
 
     if [ ${#to_remove[@]} -eq 0 ]; then
