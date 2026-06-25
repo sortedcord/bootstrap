@@ -123,31 +123,44 @@ download_file() {
     cp "$cache_file" "$dest"
 }
 
-# Helper to download multiple files in parallel using background jobs
+# Helper to download multiple files in parallel using background jobs (batched to 10 at a time)
 download_multiple_files_parallel() {
     # Usage: download_multiple_files_parallel url1 dest1 [url2 dest2 ...]
-    local pids=()
     local urls=()
+    local dests=()
     local exit_code=0
     
     while [ $# -ge 2 ]; do
-        local url="$1"
-        local dest="$2"
+        urls+=("$1")
+        dests+=("$2")
         shift 2
-        
-        # Start download in background
-        mkdir -p "$(dirname "$dest")" 2>/dev/null || true
-        curl -fsSL "$url" -o "$dest" &
-        pids+=($!)
-        urls+=("$url")
     done
     
-    # Wait for all background jobs to finish
-    for i in "${!pids[@]}"; do
-        if ! wait "${pids[$i]}"; then
-            log_warn "Failed to download from ${urls[$i]}"
-            exit_code=1
-        fi
+    local total=${#urls[@]}
+    local batch_size=10
+    
+    for ((i=0; i<total; i+=batch_size)); do
+        local pids=()
+        local batch_urls=()
+        
+        # Start up to batch_size background jobs
+        for ((j=i; j<i+batch_size && j<total; j++)); do
+            local url="${urls[$j]}"
+            local dest="${dests[$j]}"
+            
+            mkdir -p "$(dirname "$dest")" 2>/dev/null || true
+            curl -fsSL "$url" -o "$dest" &
+            pids+=($!)
+            batch_urls+=("$url")
+        done
+        
+        # Wait for all background jobs in the current batch to finish
+        for ((j=0; j<${#pids[@]}; j++)); do
+            if ! wait "${pids[$j]}"; then
+                log_warn "Failed to download from ${batch_urls[$j]}"
+                exit_code=1
+            fi
+        done
     done
     
     return $exit_code
