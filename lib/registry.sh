@@ -5,6 +5,7 @@ declare -A INSTALLERS=(
     [asciicinema]="asciinema terminal recorder"
     [bat]="Bat (alternative to cat) and configure alias"
     [docker]="Container runtime and orchestration platform"
+    [lazygit]="Simple terminal UI for git commands"
     [node]="Node.js (LTS) and NVM"
     [nvim]="Neovim 0.12.0 and configuration"
     [pnpm]="pnpm package manager"
@@ -21,6 +22,7 @@ declare -A INSTALLER_DISPLAYS=(
     [asciicinema]="asciicinema"
     [bat]="Bat"
     [docker]="Docker"
+    [lazygit]="lazygit"
     [node]="Node"
     [nvim]="Neovim"
     [pnpm]="Pnpm"
@@ -32,4 +34,4 @@ declare -A INSTALLER_DISPLAYS=(
     [zoxide]="Zoxide"
 )
 
-INSTALLER_KEYS=(agy asciicinema bat docker node nvim pnpm rust starship uv yay yazi zoxide)
+INSTALLER_KEYS=(agy asciicinema bat docker lazygit node nvim pnpm rust starship uv yay yazi zoxide)
