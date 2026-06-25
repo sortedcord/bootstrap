@@ -41,6 +41,7 @@ Example `plugins.json`:
     "my_plugin": {
       "version": "1.0.0",
       "url": "https://raw.githubusercontent.com/yourusername/repo/main/my_plugin.sh",
+      "bootstrap": "2.1.0",
       "description": "An awesome plugin that prints logs"
     }
   }
@@ -49,6 +50,7 @@ Example `plugins.json`:
 
 * **`version`**: The current semantic version of your plugin. When `bootstrap` detects a version change during `b up`, it automatically clears the cached `.sh` file, forcing a lazy re-download on the next invocation.
 * **`url`**: The raw, direct URL to your `.sh` plugin script. 
+* **`bootstrap`**: The latest version of `bootstrap` that this plugin has been tested against and is compatible with. If the user's `bootstrap` version is newer than this value, a warning is displayed notifying them of potential incompatibility.
 
 ## 3. Distribution
 

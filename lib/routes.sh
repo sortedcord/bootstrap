@@ -200,7 +200,6 @@ for script in "${SCRIPTS[@]}"; do
         # Handle non-installer commands
         case "$script" in
             plugin)
-                shift # consume 'plugin' arg
                 handle_plugin "$@"
                 # Once handle_plugin completes, we should exit so it doesn't process more SCRIPTS
                 exit $?

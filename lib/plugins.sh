@@ -39,14 +39,28 @@ parse_plugin_manifest() {
                     print "PLUGIN_VERSIONS[\"" plugin_name "\"]=\"" val "\""
                 } else if (prop == "url") {
                     print "PLUGIN_URLS[\"" plugin_name "\"]=\"" val "\""
+                } else if (prop == "bootstrap") {
+                    print "PLUGIN_BOOTSTRAP_VERSIONS[\"" plugin_name "\"]=\"" val "\""
                 }
             }
         }
     }'
 }
 
+# Ensures that the plugin sources file exists, initializing it with the official repository by default
+ensure_sources_file() {
+    local sources_file="$BOOTSTRAP_DIR/plugin_sources.txt"
+    if [ ! -f "$sources_file" ]; then
+        mkdir -p "$BOOTSTRAP_DIR"
+        echo "# Add raw URLs to JSON plugin manifests here, one per line." > "$sources_file"
+        echo "# Official Bootstrap plugin repository" >> "$sources_file"
+        echo "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins.json" >> "$sources_file"
+    fi
+}
+
 # Fetches manifests from sources and generates the cache
 update_plugin_cache() {
+    ensure_sources_file
     local cache_file="$BOOTSTRAP_DIR/lib/plugin_cache.sh"
     local sources_file="$BOOTSTRAP_DIR/plugin_sources.txt"
     
@@ -57,6 +71,7 @@ update_plugin_cache() {
 # Auto-generated plugin cache. Do not edit manually.
 declare -g -A PLUGIN_URLS
 declare -g -A PLUGIN_VERSIONS
+declare -g -A PLUGIN_BOOTSTRAP_VERSIONS
 EOF
 
     if [ -f "$sources_file" ]; then
@@ -93,11 +108,8 @@ EOF
 }
 
 manage_plugin_sources() {
+    ensure_sources_file
     local sources_file="$BOOTSTRAP_DIR/plugin_sources.txt"
-    if [ ! -f "$sources_file" ]; then
-        touch "$sources_file"
-        echo "# Add raw URLs to JSON plugin manifests here, one per line." > "$sources_file"
-    fi
 
     local editor="${EDITOR:-}"
     if [ -z "$editor" ]; then
@@ -149,6 +161,18 @@ run_plugin() {
     if [ -z "$url" ]; then
         log_error "Plugin '$plugin_name' not found in cache."
         return 1
+    fi
+    
+    # Check compatibility version
+    local compat_ver="${PLUGIN_BOOTSTRAP_VERSIONS[$plugin_name]:-}"
+    if [ -n "$compat_ver" ]; then
+        local current_ver="0.0.0"
+        if [ -f "$BOOTSTRAP_DIR/VERSION" ]; then
+            current_ver=$(cat "$BOOTSTRAP_DIR/VERSION" | tr -d '[:space:]')
+        fi
+        if version_lt "$compat_ver" "$current_ver"; then
+            log_warn "Plugin '$plugin_name' is only tested up to bootstrap version $compat_ver (current: $current_ver). It may be incompatible."
+        fi
     fi
     
     if [ "$is_ephemeral" = "true" ]; then

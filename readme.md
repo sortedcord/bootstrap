@@ -115,6 +115,28 @@ Plugins are first-party or third-party applications written to work directly wit
 
 Downloading and invoking a plugin makes no system modifications other than caching the `.sh` file itself. They are fetched only the very first time you invoke them.
 
+### Official Plugins
+
+Bootstrap comes pre-configured with a set of official plugins ready to use out-of-the-box:
+
+* **`weather`**: Fetches and displays a neat weather forecast using `wttr.in`.
+  ```bash
+  b weather
+  b weather New York
+  ```
+* **`sysinfo`**: Displays a system resource dashboard showing CPU, memory, disk usage, and OS/kernel details.
+  ```bash
+  b sysinfo
+  ```
+* **`todo`**: A command-line todo list manager. Tasks are persisted to a lightweight text file in your user directory.
+  ```bash
+  b todo add "Write a new plugin"
+  b todo list
+  b todo done 1
+  ```
+
+### Adding Third-Party Plugins
+
 To manage plugin repositories, run:
 
 ```bash
@@ -123,7 +145,7 @@ b plugin sources
 
 This opens a configuration file in your `$EDITOR`. You can add raw URLs pointing to JSON plugin manifests from any repository. Once you close the editor, `bootstrap` automatically parses those manifests using its native JSON parser and generates a fast, zero-latency lookup cache.
 
-You can then execute a plugin simply by calling its name:
+You can then execute any plugin simply by calling its name:
 
 ```bash
 b my_plugin

@@ -11,7 +11,7 @@
 # pardon my french
 parse_json() {
     # Tokenize the JSON using grep
-    grep -oE '"([^"\\]|\\.)*"|true|false|null|[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?|[{}[\]:,]' | \
+    grep -oE '"([^"\\]|\\.)*"|true|false|null|[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?|[][}{:,]' | \
     awk '
     BEGIN { 
         depth=0; 

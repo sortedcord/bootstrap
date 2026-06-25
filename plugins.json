@@ -1,0 +1,22 @@
+{
+  "plugins": {
+    "weather": {
+      "version": "1.0.0",
+      "url": "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins/weather.sh",
+      "bootstrap": "2.1.0",
+      "description": "Show weather forecast for your location"
+    },
+    "sysinfo": {
+      "version": "1.0.0",
+      "url": "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins/sysinfo.sh",
+      "bootstrap": "2.1.0",
+      "description": "Show system information and hardware statistics"
+    },
+    "todo": {
+      "version": "1.0.0",
+      "url": "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins/todo.sh",
+      "bootstrap": "2.1.0",
+      "description": "A simple command-line todo list manager"
+    }
+  }
+}
