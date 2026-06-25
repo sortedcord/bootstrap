@@ -38,6 +38,10 @@ fi
 # Source plugin system
 if [ -f "$BOOTSTRAP_DIR/lib/plugins.sh" ]; then
     . "$BOOTSTRAP_DIR/lib/plugins.sh"
+    if [ ! -f "$BOOTSTRAP_DIR/lib/plugin_cache.sh" ]; then
+        # Silently auto-generate cache if missing so official plugins are ready instantly
+        update_plugin_cache >/dev/null 2>&1 || true
+    fi
     if [ -f "$BOOTSTRAP_DIR/lib/plugin_cache.sh" ]; then
         . "$BOOTSTRAP_DIR/lib/plugin_cache.sh"
     fi
