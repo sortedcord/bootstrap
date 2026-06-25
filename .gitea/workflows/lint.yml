@@ -1,0 +1,37 @@
+name: Lint
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - master
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+      - 'docs/**'
+
+jobs:
+  lint:
+    runs-on: production
+    steps:
+      - name: Install Dependencies
+        run: |
+          apt-get update
+          apt-get install -y git shellcheck
+
+      - name: Checkout Code
+        run: |
+          git config --global --add safe.directory '*'
+          rm -rf * .git || true
+          git clone --depth 1 $GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git .
+
+      - name: Run ShellCheck
+        run: |
+          find . -type f -name '*.sh' | xargs shellcheck
