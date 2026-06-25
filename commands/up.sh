@@ -48,6 +48,13 @@ if version_lt "$local_ver" "$remote_ver" || [ "$force_update" = true ]; then
         if bash "$tmp_bootstrap"; then
             # Update the last update timestamp
             date +%s > "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/.last_b_update" 2>/dev/null || true
+            
+            # Update plugin cache
+            if [ -f "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/lib/plugins.sh" ]; then
+                . "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/lib/plugins.sh"
+                update_plugin_cache
+            fi
+            
             log_success "Bootstrap CLI successfully updated to version $remote_ver!"
         else
             log_error "Failed to execute bootstrap installer."

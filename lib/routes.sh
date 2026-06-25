@@ -35,6 +35,14 @@ else
     INSTALLER_KEYS=()
 fi
 
+# Source plugin system
+if [ -f "$BOOTSTRAP_DIR/lib/plugins.sh" ]; then
+    . "$BOOTSTRAP_DIR/lib/plugins.sh"
+    if [ -f "$BOOTSTRAP_DIR/lib/plugin_cache.sh" ]; then
+        . "$BOOTSTRAP_DIR/lib/plugin_cache.sh"
+    fi
+fi
+
 # Helper function to run/edit installer scripts
 run_ware() {
     local tool="$1"
@@ -191,6 +199,12 @@ for script in "${SCRIPTS[@]}"; do
     else
         # Handle non-installer commands
         case "$script" in
+            plugin)
+                shift # consume 'plugin' arg
+                handle_plugin "$@"
+                # Once handle_plugin completes, we should exit so it doesn't process more SCRIPTS
+                exit $?
+                ;;
             all)
                 if [ -f "$BOOTSTRAP_DIR/commands/help.sh" ]; then
                     . "$BOOTSTRAP_DIR/commands/help.sh"
@@ -263,9 +277,13 @@ for script in "${SCRIPTS[@]}"; do
                 exit 0
                 ;;
             *)
-                log_error "Unknown command '$script'."
-                log_info "Run 'b all' to list all available commands."
-                exit 1
+                if [[ -n "${PLUGIN_URLS[$script]:-}" ]]; then
+                    run_plugin "$script" "$@"
+                else
+                    log_error "Unknown command '$script'."
+                    log_info "Run 'b all' to list all available commands."
+                    exit 1
+                fi
                 ;;
         esac
     fi

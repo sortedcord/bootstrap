@@ -41,7 +41,7 @@ else
     BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_TMP_DIR"
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh")
+    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh" "lib/json.sh" "lib/plugins.sh")
     
     _curl_args=()
     for _lib in "${_LIBS[@]}"; do
@@ -82,6 +82,8 @@ install_bootstrap() {
         "lib/rollback.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
+        "lib/json.sh"
+        "lib/plugins.sh"
         "commands/help.sh"
         "commands/con.sh"
         "commands/uninstall.sh"
