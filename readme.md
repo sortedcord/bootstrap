@@ -109,6 +109,30 @@ b up
 b up --force
 ```
 
+### Plugins (`b <plugin_name>`)
+
+Plugins are first-party or third-party applications written to work directly with `bootstrap`. Unlike installers (or packages) which modify your system by compiling code, downloading binaries, and altering shell configuration files, **plugins are lazy-loaded scripts that execute within a subshell**. 
+
+Downloading and invoking a plugin makes no system modifications other than caching the `.sh` file itself. They are fetched only the very first time you invoke them.
+
+To manage plugin repositories, run:
+
+```bash
+b plugin sources
+```
+
+This opens a configuration file in your `$EDITOR`. You can add raw URLs pointing to JSON plugin manifests from any repository. Once you close the editor, `bootstrap` automatically parses those manifests using its native JSON parser and generates a fast, zero-latency lookup cache.
+
+You can then execute a plugin simply by calling its name:
+
+```bash
+b my_plugin
+```
+
+Plugins are automatically checked for updates and lazily re-downloaded whenever you run `b up`.
+
+For documentation on how to develop and publish your own plugins, please see the [Plugin Development Guide](docs/plugin_development.md).
+
 ## Uninstallation
 
 To uninstall the bootstrap helper tool but leave a lightweight `b back` function to easily reinstall it later:
