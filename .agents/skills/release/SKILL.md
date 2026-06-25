@@ -25,12 +25,22 @@ When the user asks to "cut a release", "bump the version", or "tag a new version
    - If any core-CLI commit has `feat:` → **minor**
    - Otherwise (only `fix:`, `refactor:`, etc. in core-CLI) → **patch**
    - If *all* commits are installer-only or docs-only → inform the user no release is needed.
-3. **Run the release script** non-interactively (if an actual bump is needed):
-   ```bash
-   ./scripts/release.sh --<level> -y
+3. **Formulate a verbose, structured description of the changes** based on the analyzed commits. Group the changes into logical sections (such as "Breaking Changes & Major Features:" and "Other Updates:") and list the corresponding commit messages or summaries. Example format:
+   ```text
+   Breaking Changes & Major Features:
+
+   feat: Resumable Download Helper and Manifest Preservation
+
+   Other Updates:
+
+   docs: Update readme
+   feat(skills): Add Installer to use rollback and savepoint hooks
    ```
-   (e.g., `./scripts/release.sh --minor -y`)
-4. **Push** the tag and commit (ask for user confirmation before pushing):
+4. **Run the release script** non-interactively, passing the compiled description:
+   ```bash
+   ./scripts/release.sh --<level> -y -m "<verbose description>"
+   ```
+5. **Push** the tag and commit (ask for user confirmation before pushing):
    ```bash
    git push origin master <tag>
    ```

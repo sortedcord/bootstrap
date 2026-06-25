@@ -66,6 +66,15 @@ b() {
 
     # Execute the routes file
     bash "$routes_file" "$@"
+    local ret=$?
+
+    # Sourced again in the parent shell after successfully running the command
+    if [ $ret -eq 0 ]; then
+        if [ -f "$HOME/.bashrc" ]; then
+            . "$HOME/.bashrc"
+        fi
+    fi
+    return $ret
 }
 
 # Autocompletion for the b command in Bash

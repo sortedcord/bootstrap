@@ -127,6 +127,7 @@ run_ware() {
     
     if [ "$run_status" -eq 0 ] && [ "$interrupted" = "false" ]; then
         mark_install_success "$tool"
+        source_bashrc
     else
         echo
         if [ "$interrupted" = "true" ]; then

@@ -109,7 +109,6 @@ main() {
         log_info "Installed NVM version: $(nvm --version 2>/dev/null || cat "$HOME/.nvm/package.json" | grep '"version":' | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
     else
         log_success "Installation complete."
-        log_info "Please close and reopen your terminal or run: source ~/.bashrc to verify."
     fi
 }
 

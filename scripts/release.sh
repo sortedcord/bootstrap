@@ -10,7 +10,7 @@ IFS='.' read -r cur_major cur_minor cur_patch <<< "${current#v}"
 
 bump=""
 auto_confirm=false
-
+message=""
 # Parse flags for non-interactive (agent) usage
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -18,6 +18,7 @@ while [[ $# -gt 0 ]]; do
         --minor) bump="minor"; shift ;;
         --major) bump="major"; shift ;;
         -y|--yes) auto_confirm=true; shift ;;
+        -m|--message) message="$2"; shift 2 ;;
         *) echo "Unknown option: $1" >&2; exit 1 ;;
     esac
 done
@@ -58,7 +59,7 @@ if [[ "$confirm" =~ ^[Yy]$ ]]; then
     echo "${new_ver#v}" > VERSION
     git add VERSION
     git commit -m "release: $new_ver"
-    git tag -a "$new_ver" -m "Release $new_ver"
+    git tag -a "$new_ver" -m "${message:-Release $new_ver}"
     echo "Tagged $new_ver. Push with: git push origin master $new_ver"
 else
     echo "Aborted."

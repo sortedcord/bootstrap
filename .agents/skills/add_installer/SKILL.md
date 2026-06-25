@@ -246,3 +246,4 @@ track_file "/usr/local/bin/binary"
 6. **Error handling**: Use `set -euo pipefail` after the guard block.
 7. **CLI Enforcement Guard**: Always copy the standalone execution guard block verbatim to the top of your installer script to prevent direct execution.
 8. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.
+9. **No manual shell re-sourcing**: Do NOT manually run `source ~/.bashrc` or print instructions asking the user to run it. Sourcing of the shell configuration is handled automatically by the central router and CLI at the end of the installation.

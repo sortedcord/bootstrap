@@ -166,8 +166,18 @@ create_fd_symlink() {
     fi
 }
 
+# Source the bashrc file to reload configurations
+source_bashrc() {
+    if [ -f "$HOME/.bashrc" ]; then
+        log_info "Re-sourcing ~/.bashrc..."
+        . "$HOME/.bashrc"
+    fi
+}
+
 # Export functions and variables for subshells
 export _LIB_SHELL_CONFIG_SOURCED=1
-export -f get_shell_configs remove_block inject_block add_alias_if_missing add_env_if_missing create_fd_symlink write_env_snippet write_alias_snippet remove_env_snippet remove_alias_snippet
+export -f get_shell_configs remove_block inject_block add_alias_if_missing add_env_if_missing create_fd_symlink write_env_snippet write_alias_snippet remove_env_snippet remove_alias_snippet source_bashrc
+
+
 
 
