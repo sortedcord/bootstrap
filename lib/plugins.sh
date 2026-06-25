@@ -60,18 +60,30 @@ declare -g -A PLUGIN_VERSIONS
 EOF
 
     if [ -f "$sources_file" ]; then
+        local dl_args=()
+        local temp_manifests=()
+        
         while IFS= read -r url || [ -n "$url" ]; do
             # Skip empty lines and comments
             [[ -z "$url" || "$url" == \#* ]] && continue
             
-            log_info "Fetching plugin manifest from $url..."
-            local manifest_json
-            if manifest_json=$(curl -fsSL "$url" 2>/dev/null); then
-                echo "$manifest_json" | parse_plugin_manifest >> "$cache_file"
-            else
-                log_warn "Failed to fetch manifest from $url"
-            fi
+            local temp_file
+            temp_file=$(mktemp --suffix=".json" 2>/dev/null || mktemp)
+            dl_args+=("$url" "$temp_file")
+            temp_manifests+=("$temp_file")
         done < "$sources_file"
+        
+        if [ ${#dl_args[@]} -gt 0 ]; then
+            log_info "Fetching ${#temp_manifests[@]} plugin manifests in parallel..."
+            download_multiple_files_parallel "${dl_args[@]}"
+            
+            for temp_file in "${temp_manifests[@]}"; do
+                if [ -s "$temp_file" ]; then
+                    cat "$temp_file" | parse_plugin_manifest >> "$cache_file"
+                fi
+                rm -f "$temp_file"
+            done
+        fi
     fi
     
     # Clear downloaded scripts to force lazy re-download of the updated versions

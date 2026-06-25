@@ -123,7 +123,37 @@ download_file() {
     cp "$cache_file" "$dest"
 }
 
+# Helper to download multiple files in parallel using background jobs
+download_multiple_files_parallel() {
+    # Usage: download_multiple_files_parallel url1 dest1 [url2 dest2 ...]
+    local pids=()
+    local urls=()
+    local exit_code=0
+    
+    while [ $# -ge 2 ]; do
+        local url="$1"
+        local dest="$2"
+        shift 2
+        
+        # Start download in background
+        mkdir -p "$(dirname "$dest")" 2>/dev/null || true
+        curl -fsSL "$url" -o "$dest" &
+        pids+=($!)
+        urls+=("$url")
+    done
+    
+    # Wait for all background jobs to finish
+    for i in "${!pids[@]}"; do
+        if ! wait "${pids[$i]}"; then
+            log_warn "Failed to download from ${urls[$i]}"
+            exit_code=1
+        fi
+    done
+    
+    return $exit_code
+}
+
 # Export functions and variables for subshells
 export _LIB_COMMON_SOURCED=1
 export RED GREEN YELLOW BLUE NC
-export -f require_bash log_info log_success log_warn log_error confirm has_command make_temp_dir version_lt download_file
+export -f require_bash log_info log_success log_warn log_error confirm has_command make_temp_dir version_lt download_file download_multiple_files_parallel
