@@ -131,6 +131,12 @@ b my_plugin
 
 Plugins are automatically checked for updates and lazily re-downloaded whenever you run `b up`.
 
+If you prefer to run a plugin strictly in **ephemeral mode** (meaning it will bypass the cache, download to a temporary location, execute, and then delete itself to save space and guarantee the absolute latest version), simply pass the `-e` or `--ephemeral` flag:
+
+```bash
+b my_plugin -e
+```
+
 For documentation on how to develop and publish your own plugins, please see the [Plugin Development Guide](docs/plugin_development.md).
 
 ## Uninstallation

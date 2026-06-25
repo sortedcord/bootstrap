@@ -123,34 +123,61 @@ run_plugin() {
     local plugin_name="$1"
     shift
     
+    local is_ephemeral=false
+    local cmd_args=()
+    for arg in "$@"; do
+        if [ "$arg" = "-e" ] || [ "$arg" = "--ephemeral" ]; then
+            is_ephemeral=true
+        else
+            cmd_args+=("$arg")
+        fi
+    done
+    
     local url="${PLUGIN_URLS[$plugin_name]:-}"
     if [ -z "$url" ]; then
         log_error "Plugin '$plugin_name' not found in cache."
         return 1
     fi
     
-    local plugin_dir="$BOOTSTRAP_DIR/plugins"
-    local local_plugin="$plugin_dir/${plugin_name}.sh"
+    local local_plugin
     
-    if [ ! -f "$local_plugin" ]; then
-        log_info "Downloading plugin '$plugin_name'..."
-        mkdir -p "$plugin_dir"
+    if [ "$is_ephemeral" = "true" ]; then
+        log_info "Downloading plugin '$plugin_name' (ephemeral)..."
+        local_plugin=$(mktemp --suffix=".sh" 2>/dev/null || mktemp)
         if ! curl -fsSL "$url" -o "$local_plugin"; then
             log_error "Failed to download plugin '$plugin_name' from $url"
             rm -f "$local_plugin"
             return 1
         fi
         chmod +x "$local_plugin"
+    else
+        local plugin_dir="$BOOTSTRAP_DIR/plugins"
+        local_plugin="$plugin_dir/${plugin_name}.sh"
+        
+        if [ ! -f "$local_plugin" ]; then
+            log_info "Downloading plugin '$plugin_name'..."
+            mkdir -p "$plugin_dir"
+            if ! curl -fsSL "$url" -o "$local_plugin"; then
+                log_error "Failed to download plugin '$plugin_name' from $url"
+                rm -f "$local_plugin"
+                return 1
+            fi
+            chmod +x "$local_plugin"
+        fi
     fi
     
     log_info "Running plugin '$plugin_name'..."
     # Execute the plugin in a subshell, passing any additional arguments
     (
-        # Plugins have access to common.sh already because it's sourced in the parent shell
-        # Export BOOTSTRAP_DIR so plugins can use it
         export BOOTSTRAP_DIR
-        bash "$local_plugin" "$@"
+        bash "$local_plugin" "${cmd_args[@]}"
     )
-    return $?
+    local ret=$?
+    
+    if [ "$is_ephemeral" = "true" ]; then
+        rm -f "$local_plugin"
+    fi
+    
+    return $ret
 }
 
