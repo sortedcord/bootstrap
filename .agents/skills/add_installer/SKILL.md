@@ -200,14 +200,13 @@ trap cleanup EXIT
 ### Distro-specific mapping
 
 ```bash
-pkg_install "arch:neovim|debian:nvim|fedora:neovim" "curl" "git"
+pkg_install "arch:neovim|debian:nvim|fedora:neovim" "git"
 ```
 
 ### Fetching latest GitHub release tag
 
 ```bash
 local latest_tag=""
-if has_command curl; then
     latest_tag=$(curl -sL https://api.github.com/repos/<owner>/<repo>/releases/latest \
         | grep '"tag_name":' | head -n1 \
         | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)

@@ -28,7 +28,7 @@ check_config_dir() {
 install_packages() {
     log_info "Detecting distribution and installing dependencies..."
     pkg_install \
-        git tar curl unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        git tar unzip ripgrep fzf nodejs npm xclip wl-clipboard \
         "arch:fd|debian:fd-find|fedora:fd-find" \
         "arch:cmake|debian:cmake|fedora:cmake" \
         "arch:make|debian:build-essential|fedora:make" \

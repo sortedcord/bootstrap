@@ -8,11 +8,6 @@ if [ -z "${BASH_VERSION:-}" ]; then
     exit 1
 fi
 
-if ! command -v curl >/dev/null 2>&1; then
-    echo "Error: curl is required to run this script." >&2
-    exit 1
-fi
-
 # Detect if the script is sourced
 is_sourced=false
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then

@@ -15,14 +15,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Ensure we have curl
-install_downloader() {
-    if ! has_command curl; then
-        log_info "curl not found. Installing curl..."
-        pkg_install curl
-    fi
-}
-
 detect_target_triple() {
     local ostype
     ostype="$(uname -s)"
@@ -60,7 +52,7 @@ install_rust() {
         log_info "Rust (rustup) is already installed."
     fi
 
-    install_downloader
+
 
     local target
     target=$(detect_target_triple)

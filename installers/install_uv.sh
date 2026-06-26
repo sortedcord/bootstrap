@@ -23,12 +23,6 @@ install_uv() {
         fi
     fi
 
-    # Ensure curl is installed
-    if ! has_command curl; then
-        log_info "curl not found. Installing curl..."
-        pkg_install curl
-    fi
-
     # Detect architecture
     local raw_arch
     raw_arch=$(detect_arch)

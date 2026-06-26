@@ -9,12 +9,6 @@
 
 set -euo pipefail
 
-install_curl() {
-    if ! has_command curl; then
-        log_info "curl not found. Installing curl..."
-        pkg_install curl
-    fi
-}
 
 install_fzf() {
     if has_command fzf; then
@@ -31,7 +25,7 @@ install_zoxide() {
         log_info "Zoxide is already installed."
     fi
 
-    install_curl
+
 
     log_info "Downloading and running the official zoxide installer..."
     curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
