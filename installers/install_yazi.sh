@@ -30,7 +30,6 @@ y() {
 }
 EOF
 )
-
     write_alias_snippet "yazi" "$wrapper_content"
 }
 
@@ -74,7 +73,7 @@ install_yazi() {
     unzip -q "$archive" -d "$TMP_DIR"
     
     local extract_dir="$TMP_DIR/yazi-${target}"
-    local target_dir="$HOME/.local/bin"
+    local target_dir="$BOOTSTRAP_BIN"
     mkdir -p "$target_dir"
 
     log_info "Installing Yazi to $target_dir..."

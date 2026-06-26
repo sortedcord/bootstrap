@@ -52,7 +52,7 @@ install_bat() {
     
     local extract_dir="$TMP_DIR/bat-${latest_tag}-${target}"
     
-    local target_dir="$HOME/.local/bin"
+    local target_dir="$BOOTSTRAP_BIN"
     mkdir -p "$target_dir"
     
     log_info "Installing Bat to $target_dir/bat..."

@@ -52,7 +52,7 @@ install_lazygit() {
     log_info "Extracting..."
     tar -xzf "$dest" -C "$TMP_DIR"
     
-    mkdir -p "$HOME/.local/bin"
+    mkdir -p "$BOOTSTRAP_BIN"
     cp "$TMP_DIR/lazygit" "$HOME/.local/bin/lazygit"
     chmod +x "$HOME/.local/bin/lazygit"
     track_file "$HOME/.local/bin/lazygit"

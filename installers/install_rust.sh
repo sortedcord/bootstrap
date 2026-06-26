@@ -48,7 +48,10 @@ detect_target_triple() {
 }
 
 install_rust() {
-    if has_command rustup || [ -f "$HOME/.cargo/bin/rustup" ]; then
+    export CARGO_HOME="$BOOTSTRAP_RUNTIMES/cargo"
+    export RUSTUP_HOME="$BOOTSTRAP_RUNTIMES/rustup"
+
+    if has_command rustup || [ -f "$BOOTSTRAP_RUNTIMES/cargo/bin/rustup" ]; then
         log_info "Rust (rustup) is already installed."
     fi
 
@@ -78,11 +81,15 @@ install_rust() {
 }
 
 configure_shell() {
-    # Add ~/.cargo/bin to PATH for the current process
-    export PATH="$HOME/.cargo/bin:$PATH"
 
 
-    write_env_snippet "rust" '. "$HOME/.cargo/env"'
+    local snippet_content=$(cat << 'EOF'
+export CARGO_HOME="$BOOTSTRAP_RUNTIMES/cargo"
+export RUSTUP_HOME="$BOOTSTRAP_RUNTIMES/rustup"
+. "$CARGO_HOME/env"
+EOF
+)
+    write_env_snippet "rust" "$snippet_content"
 }
 
 main() {

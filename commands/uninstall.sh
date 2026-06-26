@@ -78,6 +78,9 @@ EOF
 fi
 
 # Remove the installation directory
+rm -rf "$BOOTSTRAP_DATA_DIR"
+rm -rf "$BOOTSTRAP_STATE_DIR"
+rm -rf "$BOOTSTRAP_CACHE_DIR"
 rm -rf "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
 
 if [ "$FORCE" = "true" ]; then

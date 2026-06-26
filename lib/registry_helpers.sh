@@ -3,7 +3,7 @@
 
 # Ensures the registry file exists
 ensure_registry() {
-    local registry_file="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/registry.json"
+    local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
     if [ ! -f "$registry_file" ]; then
         mkdir -p "$(dirname "$registry_file")"
         echo '{"tools": {}}' > "$registry_file"
@@ -36,7 +36,7 @@ register_tool() {
     local source="${4:-}"
     local timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-    local bindir="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/bin"
+    local bindir="$BOOTSTRAP_BIN"
     
     local filter='if .tools == null then .tools = {} else . end |
         .tools[$tool].strategy = $strategy |
@@ -80,7 +80,7 @@ registry_remove_tool() {
 # Usage: registry_get_sys_deps <tool_name>
 registry_get_sys_deps() {
     local tool="$1"
-    local registry_file="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/registry.json"
+    local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
     if [ -f "$registry_file" ]; then
         jq -r --arg tool "$tool" '.tools[$tool].system_dependencies[]? // empty' "$registry_file"
     fi

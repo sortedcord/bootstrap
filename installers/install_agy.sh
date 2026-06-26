@@ -11,7 +11,7 @@ set -euo pipefail
 
 # Constants
 DOWNLOAD_BASE_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app"
-TARGET_DIR="$HOME/.local/bin"
+TARGET_DIR="$BOOTSTRAP_BIN"
 BINARY_PATH="$TARGET_DIR/agy"
 
 install_agy() {
@@ -127,7 +127,6 @@ install_agy() {
 
 configure_shell() {
 
-    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
 }
 
 run_handoff() {

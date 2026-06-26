@@ -16,7 +16,7 @@ cleanup() {
 trap cleanup EXIT
 
 install_nvm() {
-    if has_command nvm || [ -s "$HOME/.nvm/nvm.sh" ]; then
+    if has_command nvm || [ -s "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh" ]; then
         log_info "NVM is already installed."
     fi
 
@@ -42,20 +42,20 @@ install_nvm() {
     log_info "Downloading NVM from $nvm_url..."
     download_file "$nvm_url" "$TMP_DIR/nvm.tar.gz"
 
-    log_info "Extracting NVM archive directly to $HOME/.nvm (stripping versioned subfolder to keep config generic)..."
-    mkdir -p "$HOME/.nvm"
-    tar -xzf "$TMP_DIR/nvm.tar.gz" -C "$HOME/.nvm" --strip-components=1
+    log_info "Extracting NVM archive directly to $BOOTSTRAP_RUNTIMES/nvm (stripping versioned subfolder to keep config generic)..."
+    mkdir -p "$BOOTSTRAP_RUNTIMES/nvm"
+    tar -xzf "$TMP_DIR/nvm.tar.gz" -C "$BOOTSTRAP_RUNTIMES/nvm" --strip-components=1
     
-    track_dir "$HOME/.nvm"
+    track_dir "$BOOTSTRAP_RUNTIMES/nvm"
 
-    log_success "NVM source files successfully extracted to $HOME/.nvm."
+    log_success "NVM source files successfully extracted to $BOOTSTRAP_RUNTIMES/nvm."
 }
 
 configure_shell() {
 
     local content
     content=$(cat << 'EOF'
-export NVM_DIR="$HOME/.nvm"
+export NVM_DIR="$BOOTSTRAP_RUNTIMES/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load NVM
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # Load NVM bash completion
 EOF
@@ -66,10 +66,10 @@ EOF
 
 install_node() {
     # Ensure NVM is loaded in this script context
-    if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    if [ -s "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh" ]; then
         # Temporarily disable nounset as nvm.sh does not support set -u
         set +u
-        . "$HOME/.nvm/nvm.sh"
+        . "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh"
     else
         log_error "Could not load NVM to install Node.js."
         return 1
@@ -97,7 +97,7 @@ main() {
     if has_command node; then
         log_success "Node.js (via NVM) installation and configuration complete."
         log_info "Installed Node version: $(node --version)"
-        log_info "Installed NVM version: $(nvm --version 2>/dev/null || cat "$HOME/.nvm/package.json" | grep '"version":' | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
+        log_info "Installed NVM version: $(nvm --version 2>/dev/null || cat "$BOOTSTRAP_RUNTIMES/nvm/package.json" | grep '"version":' | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
     else
         log_success "Installation complete."
     fi

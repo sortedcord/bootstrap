@@ -34,11 +34,8 @@ install_zoxide() {
 }
 
 configure_shell() {
-    # Add ~/.local/bin to PATH for the current process
-    export PATH="$HOME/.local/bin:$PATH"
 
 
-    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
     write_env_snippet "zoxide" 'eval "$(zoxide init --cmd cd bash)"'
 }
 

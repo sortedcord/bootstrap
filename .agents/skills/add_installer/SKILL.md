@@ -59,7 +59,7 @@ The central router `lib/routes.sh` and autocomplete function in `b.sh` will dyna
 ### Step 3: Implement Rollback Tracking (Crucial)
 
 To ensure the user can seamlessly use `b rb <name>`, all manual modifications must be tracked:
-- When extracting binaries to `~/.local/bin/`, use `track_file "$HOME/.local/bin/binary"`.
+- When extracting binaries to `~/.local/bin/`, use `track_file "${BOOTSTRAP_BIN:-$HOME/.local/share/bootstrap/bin}/binary"`.
 - When creating directories like `~/.config/tool/`, use `track_dir "$HOME/.config/tool"`.
 - When running manual apt/dnf/npm commands, log their inverses: `add_rollback_cmd "sudo npm uninstall -g package"`.
 Note: `pkg_install`, `write_env_snippet`, and `write_alias_snippet` will automatically track themselves.
@@ -116,8 +116,8 @@ install_<name>() {
     # Or manual downloads (always use download_file for resumability!):
     #   local url="https://..."
     #   download_file "$url" "$TMP_DIR/binary"
-    #   cp "$TMP_DIR/binary" "$HOME/.local/bin/binary"
-    #   track_file "$HOME/.local/bin/binary"  # Important for rollback!
+    #   cp "$TMP_DIR/binary" "${BOOTSTRAP_BIN:-$HOME/.local/share/bootstrap/bin}/binary"
+    #   track_file "${BOOTSTRAP_BIN:-$HOME/.local/share/bootstrap/bin}/binary"  # Important for rollback!
 }
 
 # ─── Shell Configuration (if needed) ─────────────────────────────────

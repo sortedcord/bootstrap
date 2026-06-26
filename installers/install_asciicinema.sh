@@ -68,14 +68,14 @@ install_asciicinema() {
     log_info "Downloading asciinema ${latest_tag} for ${arch}..."
     github_download_asset "asciinema/asciinema" "$latest_tag" "asciinema-${asciinema_arch}" "$TMP_DIR/asciinema"
 
-    log_info "Installing asciinema to /usr/local/bin..."
-    sudo cp "$TMP_DIR/asciinema" /usr/local/bin/asciinema
-    sudo chmod +x /usr/local/bin/asciinema
-    track_file "/usr/local/bin/asciinema"
+    log_info "Installing asciinema to $BOOTSTRAP_BIN..."
+    cp "$TMP_DIR/asciinema" "$BOOTSTRAP_BIN/asciinema"
+    chmod +x "$BOOTSTRAP_BIN/asciinema"
+    track_file "$BOOTSTRAP_BIN/asciinema"
 
     # Create compatibility symlink matching the installer name spelling
     log_info "Creating compatibility symlink for asciicinema..."
-    sudo ln -sf /usr/local/bin/asciinema /usr/local/bin/asciicinema
+    ln -sf "$BOOTSTRAP_BIN/asciinema" /usr/local/bin/asciicinema
     track_file "/usr/local/bin/asciicinema"
 
     log_success "asciinema ${latest_tag} installed."

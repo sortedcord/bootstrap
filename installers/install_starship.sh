@@ -49,7 +49,7 @@ install_starship() {
     tar -xzf "$archive" -C "$TMP_DIR"
 
     # Install to ~/.local/bin
-    local target_dir="$HOME/.local/bin"
+    local target_dir="$BOOTSTRAP_BIN"
     mkdir -p "$target_dir"
     log_info "Installing Starship to $target_dir/starship..."
     cp "$TMP_DIR/starship" "$target_dir/starship"
@@ -59,11 +59,8 @@ install_starship() {
 }
 
 configure_shell() {
-    # Add ~/.local/bin to PATH for the current process
-    export PATH="$HOME/.local/bin:$PATH"
 
 
-    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
     write_env_snippet "starship" 'eval "$(starship init bash)"'
 }
 

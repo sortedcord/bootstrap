@@ -189,7 +189,7 @@ configure_shell() {
     local content
     content=$(cat << 'EOF'
 # pnpm
-export PNPM_HOME="$HOME/.local/share/pnpm"
+export PNPM_HOME="$BOOTSTRAP_RUNTIMES/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;

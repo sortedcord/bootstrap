@@ -58,7 +58,7 @@ install_uv() {
     tar -xzf "$archive" --strip-components 1 -C "$TMP_DIR"
 
     # Install to ~/.local/bin
-    local target_dir="$HOME/.local/bin"
+    local target_dir="$BOOTSTRAP_BIN"
     mkdir -p "$target_dir"
     log_info "Installing uv and uvx to $target_dir..."
     cp "$TMP_DIR/uv" "$target_dir/uv"
@@ -70,11 +70,8 @@ install_uv() {
 }
 
 configure_shell() {
-    # Add ~/.local/bin to PATH for the current process
-    export PATH="$HOME/.local/bin:$PATH"
 
 
-    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
     write_env_snippet "uv" 'eval "$(uv generate-shell-completion bash)"'
 }
 

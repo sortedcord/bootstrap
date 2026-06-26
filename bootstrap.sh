@@ -65,9 +65,26 @@ install_bootstrap() {
     [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
 
     local routes_dir="$HOME/.config/bootstrap"
-    mkdir -p "$routes_dir"
     mkdir -p "$routes_dir/env.d"
     mkdir -p "$routes_dir/aliases.d"
+
+    # Initialize XDG directories
+    mkdir -p "$HOME/.local/share/bootstrap/bin"
+    mkdir -p "$HOME/.local/share/bootstrap/opt"
+    mkdir -p "$HOME/.local/share/bootstrap/runtimes"
+    mkdir -p "$HOME/.local/state/bootstrap/logs"
+    mkdir -p "$HOME/.local/state/bootstrap/rollback"
+    mkdir -p "$HOME/.cache/bootstrap/downloads"
+    mkdir -p "$HOME/.cache/bootstrap/tmp"
+
+    # Create the universal binary PATH snippet
+    cat << 'EOF' > "$routes_dir/env.d/bootstrap-bin.sh"
+export BOOTSTRAP_BIN="$BOOTSTRAP_BIN"
+case ":$PATH:" in
+  *":$BOOTSTRAP_BIN:"*) ;;
+  *) export PATH="$BOOTSTRAP_BIN:$PATH" ;;
+esac
+EOF
 
     # List of all files to download/copy
     local files=(
@@ -142,6 +159,13 @@ install_bootstrap() {
 
 # >>> bootstrap-cli setup >>>
 export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
+export BOOTSTRAP_DATA_DIR="$HOME/.local/share/bootstrap"
+export BOOTSTRAP_STATE_DIR="$HOME/.local/state/bootstrap"
+export BOOTSTRAP_CACHE_DIR="$HOME/.cache/bootstrap"
+export BOOTSTRAP_BIN="$BOOTSTRAP_DATA_DIR/bin"
+export BOOTSTRAP_OPT="$BOOTSTRAP_DATA_DIR/opt"
+export BOOTSTRAP_RUNTIMES="$BOOTSTRAP_DATA_DIR/runtimes"
+
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
 for f in "$BOOTSTRAP_DIR/env.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 for f in "$BOOTSTRAP_DIR/aliases.d/"*.sh; do [ -r "$f" ] && . "$f"; done

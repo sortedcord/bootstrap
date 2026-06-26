@@ -10,7 +10,8 @@
 set -euo pipefail
 
 NVIM_VERSION="0.12.0"
-NVIM_INSTALL_DIR="/opt/nvim"
+NVIM_INSTALL_DIR="$BOOTSTRAP_OPT/nvim"
+NVIM_BIN_DIR="$BOOTSTRAP_BIN"
 NVIM_CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
 NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
@@ -76,13 +77,14 @@ install_nvim() {
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 
-    sudo rm -rf "$NVIM_INSTALL_DIR"
-    sudo mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
+    rm -rf "$NVIM_INSTALL_DIR"
+    mkdir -p "$(dirname "$NVIM_INSTALL_DIR")"
+    mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
 
-    sudo ln -sf "$NVIM_INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
+    ln -sf "$NVIM_INSTALL_DIR/bin/nvim" "$NVIM_BIN_DIR/nvim"
     
     track_dir "$NVIM_INSTALL_DIR"
-    track_file "/usr/local/bin/nvim"
+    track_file "$NVIM_BIN_DIR/nvim"
 
     log_success "Installed:"
     nvim --version | head -n1
