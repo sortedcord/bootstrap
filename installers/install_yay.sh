@@ -2,6 +2,7 @@
 # Tool: yay
 # DisplayName: Yay
 # Description: Install Yay AUR helper
+# Strategy: system
 #
 # Yay Installer Script
 #
@@ -66,6 +67,7 @@ install_yay() {
     cd "$orig_dir"
     log_info "Cleaning up installer directory..."
     rm -rf "$clone_dir"
+    register_tool "yay" "system" "" "aur:yay-bin"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

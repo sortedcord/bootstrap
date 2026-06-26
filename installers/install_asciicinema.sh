@@ -2,6 +2,7 @@
 # Tool: asciicinema
 # DisplayName: asciicinema
 # Description: Install asciinema terminal recorder
+# Strategy: binary
 #
 # asciinema Installer Script
 #
@@ -84,6 +85,7 @@ install_asciicinema() {
     track_file "/usr/local/bin/asciicinema"
 
     log_success "asciinema ${latest_tag} installed."
+    register_tool "asciicinema" "binary" "$latest_tag" "github:asciinema/asciinema"
 }
 
 main() {

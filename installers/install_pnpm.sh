@@ -2,6 +2,7 @@
 # Tool: pnpm
 # DisplayName: Pnpm
 # Description: Install pnpm package manager
+# Strategy: binary
 #
 # pnpm Installer Script
 #
@@ -182,6 +183,7 @@ install_pnpm() {
 
     track_dir "$HOME/.local/share/pnpm"
     log_success "pnpm v${version} installed successfully!"
+    register_tool "pnpm" "binary" "$version" "github:pnpm/pnpm"
 }
 
 # ─── Shell Configuration ─────────────────────────────────────────────

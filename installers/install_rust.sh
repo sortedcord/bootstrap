@@ -2,6 +2,7 @@
 # Tool: rust
 # DisplayName: Rust
 # Description: Install Rustup and Rust compiler/toolchain
+# Strategy: managed
 #
 # Rust Installer Script (Simplified Local Rustup Init)
 #
@@ -87,6 +88,7 @@ install_rust() {
     "$dest" -y --no-modify-path
     
     add_rollback_cmd "rustup self uninstall -y"
+    register_tool "rust" "managed" "" "rustup"
 }
 
 configure_shell() {

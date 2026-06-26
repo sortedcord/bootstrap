@@ -2,6 +2,7 @@
 # Tool: zoxide
 # DisplayName: Zoxide
 # Description: Install Zoxide directory jumper
+# Strategy: managed
 #
 # Zoxide Installer Script
 #
@@ -41,6 +42,7 @@ install_zoxide() {
     log_info "Downloading and running the official zoxide installer..."
     curl -sSfL https://raw.githubusercontent.com/ajeetdsouza/zoxide/main/install.sh | sh
     track_file "$HOME/.local/bin/zoxide"
+    register_tool "zoxide" "managed" "" "github:ajeetdsouza/zoxide"
 }
 
 configure_shell() {

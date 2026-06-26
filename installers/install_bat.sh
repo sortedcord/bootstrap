@@ -2,6 +2,7 @@
 # Tool: bat
 # DisplayName: Bat
 # Description: Install Bat (alternative to cat) and configure alias
+# Strategy: binary
 #
 # Bat Installer Script
 #

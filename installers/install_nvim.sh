@@ -2,6 +2,7 @@
 # Tool: nvim
 # DisplayName: Neovim
 # Description: Install Neovim 0.12.0 and configuration
+# Strategy: binary
 #
 # Neovim Installer Script
 #
@@ -91,6 +92,7 @@ install_nvim() {
 
     log_success "Installed:"
     nvim --version | head -n1
+    register_tool "nvim" "binary" "$NVIM_VERSION" "github:neovim/neovim"
 }
 
 install_config() {

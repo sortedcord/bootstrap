@@ -2,6 +2,7 @@
 # Tool: uv
 # DisplayName: uv
 # Description: Fast Python package installer and resolver
+# Strategy: binary
 #
 # uv Installer Script
 #
@@ -77,6 +78,7 @@ install_uv() {
     chmod +x "$target_dir/uv" "$target_dir/uvx"
     track_file "$target_dir/uv"
     track_file "$target_dir/uvx"
+    register_tool "uv" "binary" "$latest_tag" "github:astral-sh/uv"
 }
 
 configure_shell() {

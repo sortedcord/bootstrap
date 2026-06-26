@@ -34,4 +34,21 @@ declare -A INSTALLER_DISPLAYS=(
     [zoxide]="Zoxide"
 )
 
+declare -A INSTALLER_STRATEGIES=(
+    [agy]="binary"
+    [asciicinema]="binary"
+    [bat]="binary"
+    [docker]="system"
+    [lazygit]="binary"
+    [node]="managed"
+    [nvim]="binary"
+    [pnpm]="binary"
+    [rust]="managed"
+    [starship]="binary"
+    [uv]="binary"
+    [yay]="system"
+    [yazi]="binary"
+    [zoxide]="managed"
+)
+
 INSTALLER_KEYS=(agy asciicinema bat docker lazygit node nvim pnpm rust starship uv yay yazi zoxide)

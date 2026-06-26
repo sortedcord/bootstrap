@@ -2,6 +2,7 @@
 # Tool: starship
 # DisplayName: Starship
 # Description: Install Starship shell prompt
+# Strategy: binary
 #
 # Starship Installer Script
 #
@@ -66,6 +67,7 @@ install_starship() {
     cp "$TMP_DIR/starship" "$target_dir/starship"
     chmod +x "$target_dir/starship"
     track_file "$target_dir/starship"
+    register_tool "starship" "binary" "$latest_tag" "github:starship/starship"
 }
 
 configure_shell() {

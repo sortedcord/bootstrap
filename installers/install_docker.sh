@@ -2,6 +2,7 @@
 # Tool: docker
 # DisplayName: Docker
 # Description: Container runtime and orchestration platform
+# Strategy: system
 #
 # Docker Installer Script
 #
@@ -58,6 +59,7 @@ install_docker() {
         sudo systemctl enable --now docker.service || true
         sudo systemctl enable --now containerd.service || true
     fi
+    register_tool "docker" "system" "" "os-package-manager"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

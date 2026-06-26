@@ -2,6 +2,7 @@
 # Tool: yazi
 # DisplayName: Yazi
 # Description: Install Yazi terminal file manager and dependencies
+# Strategy: binary
 #
 # Yazi Installer Script
 #

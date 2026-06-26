@@ -13,6 +13,7 @@ echo "==> Generating registry.sh..."
 # Temporary arrays
 declare -A tools_desc
 declare -A tools_disp
+declare -A tools_strat
 keys=()
 
 for f in "$INSTALLERS_DIR"/install_*.sh; do
@@ -20,10 +21,12 @@ for f in "$INSTALLERS_DIR"/install_*.sh; do
     tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
     disp_name=$(grep -E "^# DisplayName:" "$f" | head -n1 | sed -E 's/^# DisplayName:\s*//I')
     desc=$(grep -E "^# Description:" "$f" | head -n1 | sed -E 's/^# Description:\s*//I' | sed -E 's/^Install\s+//I')
+    strat=$(grep -E "^# Strategy:" "$f" | head -n1 | sed -E 's/^# Strategy:\s*//I')
     
     if [ -n "$tool" ]; then
         tools_desc["$tool"]="$desc"
         tools_disp["$tool"]="${disp_name:-$tool}"
+        tools_strat["$tool"]="${strat:-unknown}"
         keys+=("$tool")
     fi
 done
@@ -46,6 +49,13 @@ sorted_keys=($(printf '%s\n' "${keys[@]}" | sort))
     for k in "${sorted_keys[@]}"; do
         escaped_disp=$(echo "${tools_disp[$k]}" | sed 's/"/\\"/g')
         echo "    [$k]=\"$escaped_disp\""
+    done
+    echo ")"
+    echo ""
+    echo "declare -A INSTALLER_STRATEGIES=("
+    for k in "${sorted_keys[@]}"; do
+        escaped_strat=$(echo "${tools_strat[$k]}" | sed 's/"/\\"/g')
+        echo "    [$k]=\"$escaped_strat\""
     done
     echo ")"
     echo ""

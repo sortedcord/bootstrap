@@ -2,6 +2,7 @@
 # Tool: node
 # DisplayName: Node
 # Description: Install Node.js (LTS) and NVM
+# Strategy: managed
 #
 # Node.js and NVM Installer Script
 #
@@ -95,6 +96,7 @@ install_node() {
     nvm alias default 'lts/*'
     log_success "Node.js installed successfully!"
     set -u
+    register_tool "node" "managed" "$latest_tag" "github:nvm-sh/nvm"
 }
 
 main() {

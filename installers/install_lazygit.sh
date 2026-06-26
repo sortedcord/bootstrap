@@ -2,6 +2,7 @@
 # Tool: lazygit
 # DisplayName: lazygit
 # Description: Simple terminal UI for git commands
+# Strategy: binary
 #
 # lazygit Installer Script
 #
@@ -61,6 +62,7 @@ install_lazygit() {
     cp "$TMP_DIR/lazygit" "$HOME/.local/bin/lazygit"
     chmod +x "$HOME/.local/bin/lazygit"
     track_file "$HOME/.local/bin/lazygit"
+    register_tool "lazygit" "binary" "$latest_tag" "github:jesseduffield/lazygit"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

@@ -2,6 +2,7 @@
 # Tool: agy
 # DisplayName: Antigravity
 # Description: Install Antigravity CLI
+# Strategy: binary
 #
 # Antigravity CLI Installer Script (Linux Only)
 #
@@ -127,6 +128,7 @@ install_agy() {
     track_file "$BINARY_PATH"
 
     log_success "Antigravity CLI successfully installed to $BINARY_PATH."
+    register_tool "agy" "binary" "" "github:sortedcord/agy"
 }
 
 configure_shell() {
