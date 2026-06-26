@@ -51,6 +51,13 @@ track_dir() {
 
 create_savepoint() {
     local name="$1"
+    
+    # Prevent savepoints from having the same name as a tool
+    if [ -n "${INSTALLERS[$name]:-}" ]; then
+        log_error "Cannot create savepoint named '$name' because it conflicts with a tool name."
+        return 1
+    fi
+
     echo "SAVEPOINT: $name" >> "$BOOTSTRAP_HISTORY_LOG"
     log_success "Savepoint '$name' created."
 }
