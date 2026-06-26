@@ -45,72 +45,64 @@ EOF
 }
 
 install_yazi() {
-    local distro
-    distro=$(detect_distro)
-
-    if [ "$distro" = "arch" ]; then
-        log_info "Arch Linux detected"
-        if has_command yazi; then
-            log_info "Yazi is already installed."
+    if has_command yazi; then
+        if ! confirm "Yazi is already installed. Reinstall/Upgrade?"; then
+            log_info "Skipping Yazi installation."
+            return
         fi
-
-        log_info "Installing Yazi..."
-        pkg_install yazi
-        log_info "Installing dependencies subsequently..."
-        pkg_install ffmpeg 7zip jq poppler fd ripgrep fzf zoxide resvg imagemagick
-
-    elif [ "$distro" = "debian" ]; then
-        log_info "Debian/Ubuntu detected"
-        if has_command yazi; then
-            log_info "Yazi is already installed."
-        fi
-
-        pkg_install curl git
-
-        log_info "Fetching latest Yazi version from GitHub..."
-        local latest_tag=""
-        latest_tag=$(github_get_latest_release "sxyazi/yazi")
-        
-        if [ -z "$latest_tag" ]; then
-            latest_tag="v26.5.6"
-        fi
-
-        log_info "Downloading Yazi ${latest_tag}..."
-        github_download_asset "sxyazi/yazi" "$latest_tag" "yazi-x86_64-unknown-linux-gnu\.deb" "$TMP_DIR/yazi.deb"
-
-        log_info "Installing Yazi package..."
-        sudo apt install -y "$TMP_DIR/yazi.deb"
-        add_rollback_cmd "sudo apt remove -y yazi"
-
-        log_info "Installing dependencies subsequently..."
-        pkg_install ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick 7zip || \
-        pkg_install ffmpeg jq poppler-utils fd-find ripgrep fzf zoxide resvg imagemagick p7zip-full
-
-        create_fd_symlink
-
-    elif [ "$distro" = "fedora" ]; then
-        log_info "Fedora detected"
-        if has_command yazi; then
-            log_info "Yazi is already installed."
-        fi
-
-        log_info "Installing dnf-plugins-core..."
-        pkg_install dnf-plugins-core
-
-        log_info "Enabling lihaohong/yazi copr repo..."
-        sudo dnf copr enable -y lihaohong/yazi
-
-        log_info "Installing Yazi (without weak dependencies first)..."
-        sudo dnf install -y yazi --setopt=install_weak_deps=False
-        add_rollback_cmd "sudo dnf remove -y yazi"
-
-        log_info "Installing weak dependencies subsequently..."
-        pkg_install yazi
-
-    else
-        log_error "Unsupported distribution."
-        exit 1
     fi
+
+    # Ensure required extraction tools are installed
+    if ! has_command unzip; then
+        log_info "unzip not found. Installing unzip..."
+        pkg_install unzip
+    fi
+
+    local arch
+    arch=$(detect_arch)
+    local target=""
+    case "$arch" in
+        x86_64) target="x86_64-unknown-linux-gnu" ;;
+        arm64)  target="aarch64-unknown-linux-gnu" ;;
+        *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
+    esac
+
+    log_info "Fetching latest Yazi version from GitHub..."
+    local latest_tag=""
+    latest_tag=$(github_get_latest_release "sxyazi/yazi")
+    
+    if [ -z "$latest_tag" ]; then
+        latest_tag="v0.3.3"
+        log_warn "Failed to fetch latest version from GitHub. Falling back to: $latest_tag"
+    fi
+
+    log_info "Downloading Yazi ${latest_tag}..."
+    local archive="$TMP_DIR/yazi.zip"
+    github_download_asset "sxyazi/yazi" "$latest_tag" "yazi-${target}\.zip" "$archive"
+
+    log_info "Extracting Yazi binaries..."
+    unzip -q "$archive" -d "$TMP_DIR"
+    
+    local extract_dir="$TMP_DIR/yazi-${target}"
+    local target_dir="$HOME/.local/bin"
+    mkdir -p "$target_dir"
+
+    log_info "Installing Yazi to $target_dir..."
+    cp "$extract_dir/yazi" "$target_dir/yazi"
+    cp "$extract_dir/ya" "$target_dir/ya"
+    chmod +x "$target_dir/yazi" "$target_dir/ya"
+    track_file "$target_dir/yazi"
+    track_file "$target_dir/ya"
+
+    log_info "Installing system dependencies for Yazi..."
+    pkg_install ffmpeg jq ripgrep fzf zoxide resvg imagemagick "arch:7zip|debian:7zip|fedora:p7zip" "arch:poppler|debian:poppler-utils|fedora:poppler-utils" "arch:fd|debian:fd-find|fedora:fd-find"
+    
+    create_fd_symlink
+    
+    register_tool "yazi" "binary" "$latest_tag" "github:sxyazi/yazi"
+    
+    # Add the system dependencies to the registry for uninstallation tracking
+    registry_add_sys_deps "yazi" ffmpeg jq ripgrep fzf zoxide resvg imagemagick "arch:7zip|debian:7zip|fedora:p7zip" "arch:poppler|debian:poppler-utils|fedora:poppler-utils" "arch:fd|debian:fd-find|fedora:fd-find"
 }
 
 main() {
