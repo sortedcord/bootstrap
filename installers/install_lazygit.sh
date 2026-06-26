@@ -30,11 +30,7 @@ install_lazygit() {
     fi
 
     local latest_tag=""
-    if has_command curl; then
-        latest_tag=$(curl -sL https://api.github.com/repos/jesseduffield/lazygit/releases/latest \
-            | grep '"tag_name":' | head -n1 \
-            | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-    fi
+    latest_tag=$(github_get_latest_release "jesseduffield/lazygit")
 
     if [ -z "$latest_tag" ]; then
         latest_tag="v0.62.2"  # fallback
@@ -49,8 +45,6 @@ install_lazygit() {
         arch_str="arm64"
     fi
 
-    local url="https://github.com/jesseduffield/lazygit/releases/download/${latest_tag}/lazygit_${version}_linux_${arch_str}.tar.gz"
-
     TMP_DIR="$(make_temp_dir)"
     cleanup() { rm -rf "$TMP_DIR"; }
     trap cleanup EXIT
@@ -58,7 +52,7 @@ install_lazygit() {
     local dest="$TMP_DIR/lazygit.tar.gz"
 
     log_info "Downloading lazygit ${latest_tag}..."
-    download_file "$url" "$dest"
+    github_download_asset "jesseduffield/lazygit" "$latest_tag" "lazygit_${version}_linux_${arch_str}\.tar\.gz" "$dest"
 
     log_info "Extracting..."
     tar -xzf "$dest" -C "$TMP_DIR"

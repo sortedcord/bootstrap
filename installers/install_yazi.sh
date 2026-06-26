@@ -68,15 +68,15 @@ install_yazi() {
         pkg_install curl git
 
         log_info "Fetching latest Yazi version from GitHub..."
-        local latest_tag
-        latest_tag=$(curl -sL https://api.github.com/repos/sxyazi/yazi/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+        local latest_tag=""
+        latest_tag=$(github_get_latest_release "sxyazi/yazi")
+        
         if [ -z "$latest_tag" ]; then
             latest_tag="v26.5.6"
         fi
 
-        local deb_url="https://github.com/sxyazi/yazi/releases/download/${latest_tag}/yazi-x86_64-unknown-linux-gnu.deb"
-        log_info "Downloading Yazi ${latest_tag} from ${deb_url}..."
-        download_file "$deb_url" "$TMP_DIR/yazi.deb"
+        log_info "Downloading Yazi ${latest_tag}..."
+        github_download_asset "sxyazi/yazi" "$latest_tag" "yazi-x86_64-unknown-linux-gnu\.deb" "$TMP_DIR/yazi.deb"
 
         log_info "Installing Yazi package..."
         sudo apt install -y "$TMP_DIR/yazi.deb"
