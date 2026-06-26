@@ -34,7 +34,7 @@ install_nvm() {
     # Try to fetch the latest version of NVM from GitHub API
     log_info "Fetching the latest NVM version..."
     local latest_tag=""
-        latest_tag=$(curl -sL https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+    latest_tag=$(github_get_latest_release "nvm-sh/nvm")
 
     if [ -z "$latest_tag" ]; then
         latest_tag="v0.40.5" # Fallback version if API request fails

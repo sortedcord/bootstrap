@@ -54,21 +54,15 @@ install_uv() {
 
     log_info "Fetching latest uv version from GitHub..."
     local latest_tag=""
-        latest_tag=$(curl -sL https://api.github.com/repos/astral-sh/uv/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+    latest_tag=$(github_get_latest_release "astral-sh/uv")
 
-    local download_url
-    if [ -n "$latest_tag" ]; then
-        log_info "Latest uv version found: $latest_tag"
-        download_url="https://github.com/astral-sh/uv/releases/download/${latest_tag}/uv-${target}.tar.gz"
-    else
+    if [ -z "$latest_tag" ]; then
         latest_tag="latest"
-        log_warn "Failed to fetch latest version from GitHub. Falling back to downloading latest release directly."
-        download_url="https://github.com/astral-sh/uv/releases/latest/download/uv-${target}.tar.gz"
     fi
 
-    log_info "Downloading uv from ${download_url}..."
+    log_info "Downloading uv ${latest_tag}..."
     local archive="$TMP_DIR/uv.tar.gz"
-    download_file "$download_url" "$archive"
+    github_download_asset "astral-sh/uv" "$latest_tag" "uv-${target}\.tar\.gz" "$archive"
 
     # Extract the binaries
     log_info "Extracting uv binaries..."

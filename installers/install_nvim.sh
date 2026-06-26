@@ -76,10 +76,8 @@ install_nvim() {
         *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
     esac
 
-    local nvim_url="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${nvim_arch}.tar.gz"
-
     log_info "Downloading Neovim v${NVIM_VERSION} for ${arch}..."
-    download_file "$nvim_url" "$TMP_DIR/nvim.tar.gz"
+    github_download_asset "neovim/neovim" "v${NVIM_VERSION}" "nvim-${nvim_arch}\.tar\.gz" "$TMP_DIR/nvim.tar.gz"
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 

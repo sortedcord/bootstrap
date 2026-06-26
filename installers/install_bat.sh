@@ -41,7 +41,7 @@ install_bat() {
 
         log_info "Fetching latest Bat version from GitHub..."
         local latest_tag=""
-            latest_tag=$(curl -sL https://api.github.com/repos/sharkdp/bat/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+        latest_tag=$(github_get_latest_release "sharkdp/bat")
 
         if [ -z "$latest_tag" ]; then
             latest_tag="v0.26.1"
@@ -61,9 +61,8 @@ install_bat() {
             deb_arch="arm64"
         fi
 
-        local deb_url="https://github.com/sharkdp/bat/releases/download/${latest_tag}/bat_${version}_${deb_arch}.deb"
-        log_info "Downloading Bat from ${deb_url}..."
-        download_file "$deb_url" "$TMP_DIR/bat.deb"
+        log_info "Downloading Bat ${latest_tag}..."
+        github_download_asset "sharkdp/bat" "$latest_tag" "bat_${version}_${deb_arch}\.deb" "$TMP_DIR/bat.deb"
 
         log_info "Installing Bat package..."
         sudo apt install -y "$TMP_DIR/bat.deb"

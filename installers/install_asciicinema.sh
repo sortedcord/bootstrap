@@ -21,12 +21,9 @@ cleanup() {
 trap cleanup EXIT
 
 install_asciicinema() {
-    local latest_tag=""
     if has_command curl; then
         log_info "Fetching latest asciinema version from GitHub..."
-        latest_tag=$(curl -sL https://api.github.com/repos/asciinema/asciinema/releases/latest \
-            | grep '"tag_name":' | head -n1 \
-            | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+        latest_tag=$(github_get_latest_release "asciinema/asciinema")
     fi
 
     if [ -z "$latest_tag" ]; then
@@ -73,10 +70,8 @@ install_asciicinema() {
         *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
     esac
 
-    local download_url="https://github.com/asciinema/asciinema/releases/download/${latest_tag}/asciinema-${asciinema_arch}"
-    
     log_info "Downloading asciinema ${latest_tag} for ${arch}..."
-    download_file "$download_url" "$TMP_DIR/asciinema"
+    github_download_asset "asciinema/asciinema" "$latest_tag" "asciinema-${asciinema_arch}" "$TMP_DIR/asciinema"
 
     log_info "Installing asciinema to /usr/local/bin..."
     sudo cp "$TMP_DIR/asciinema" /usr/local/bin/asciinema

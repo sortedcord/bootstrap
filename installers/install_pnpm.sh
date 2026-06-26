@@ -127,14 +127,17 @@ install_pnpm() {
     }
     libc_suffix="$(detect_libc_suffix)"
 
-    # Fetch the latest version from the npm registry, or use PNPM_VERSION if set
+    # Fetch the latest version from GitHub, or use PNPM_VERSION if set
     if [ -z "${PNPM_VERSION:-}" ]; then
-        log_info "Fetching latest pnpm version from npm registry..."
-        version_json="$(download "https://registry.npmjs.org/@pnpm/exe")" || {
-            log_error "Failed to fetch pnpm version info from npm registry."
+        log_info "Fetching latest pnpm version from GitHub..."
+        local tag
+        tag=$(github_get_latest_release "pnpm/pnpm")
+        if [ -n "$tag" ]; then
+            version="${tag#v}"
+        else
+            log_error "Failed to fetch pnpm version info from GitHub."
             return 1
-        }
-        version="$(echo "$version_json" | grep -o '"latest":[[:space:]]*"[0-9.]*"' | grep -o '[0-9.]*')"
+        fi
     else
         version="${PNPM_VERSION}"
     fi
@@ -151,7 +154,7 @@ install_pnpm() {
 
     if [ "$major_version" -ge 11 ]; then
         # v11+: distributed as tarballs containing the binary and dist/ directory
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}.tar.gz" "$TMP_DIR/pnpm.tar.gz" || {
+        github_download_asset "pnpm/pnpm" "v${version}" "${asset_base}\.tar\.gz" "$TMP_DIR/pnpm.tar.gz" || {
             log_error "Failed to download pnpm tarball."
             return 1
         }
@@ -166,7 +169,7 @@ install_pnpm() {
         }
     else
         # Older versions: distributed as a single executable binary
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}" "$TMP_DIR/pnpm" || {
+        github_download_asset "pnpm/pnpm" "v${version}" "${asset_base}" "$TMP_DIR/pnpm" || {
             log_error "Failed to download pnpm binary."
             return 1
         }

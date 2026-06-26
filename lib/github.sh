@@ -3,6 +3,11 @@
 
 # Usage: github_get_latest_release <owner/repo>
 # Prints the tag_name of the latest release.
+
+# Installers still use this function instead of just directly invoking download_asset function:
+# - Asset names often contain the version
+# - Installers may compare the latest tag from github against the locally installed version before doing any work.
+# - We need concrete version string so we can pass it to the reigster_tool function.
 github_get_latest_release() {
     local repo="$1"
     local tag
