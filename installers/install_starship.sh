@@ -74,12 +74,6 @@ configure_shell() {
     # Add ~/.local/bin to PATH for the current process
     export PATH="$HOME/.local/bin:$PATH"
 
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "local-bin path"
-        remove_block "$config_file" "starship init"
-    done
 
     write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
     write_env_snippet "starship" 'eval "$(starship init bash)"'

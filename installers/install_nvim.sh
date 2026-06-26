@@ -111,24 +111,6 @@ install_config() {
 }
 
 configure_shell() {
-    # Clean up legacy inline edits from bashrc and bash_aliases
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        if [ -f "$config_file" ]; then
-            local tmp_file
-            tmp_file=$(mktemp)
-            sed '/^export EDITOR="nvim"/d' "$config_file" > "$tmp_file"
-            cat "$tmp_file" > "$config_file"
-            rm -f "$tmp_file"
-        fi
-    done
-    if [ -f "$HOME/.bash_aliases" ]; then
-        local tmp_file
-        tmp_file=$(mktemp)
-        sed '/^alias vim="nvim"/d' "$HOME/.bash_aliases" > "$tmp_file"
-        cat "$tmp_file" > "$HOME/.bash_aliases"
-        rm -f "$tmp_file"
-    fi
 
     write_alias_snippet "nvim" 'alias vim="nvim"'
     write_env_snippet "nvim" 'export EDITOR="nvim"'

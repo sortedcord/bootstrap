@@ -22,11 +22,6 @@ cleanup() {
 trap cleanup EXIT
 
 add_y_wrapper() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "yazi wrapper"
-    done
 
     local wrapper_content
     wrapper_content=$(cat << 'EOF'

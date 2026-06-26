@@ -189,11 +189,6 @@ install_pnpm() {
 # ─── Shell Configuration ─────────────────────────────────────────────
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "pnpm setup"
-    done
 
     # pnpm's `setup --force` configures PNPM_HOME and PATH automatically,
     # but we also add an env block to ensure PNPM_HOME is set consistently.

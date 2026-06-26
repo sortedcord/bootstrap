@@ -95,11 +95,6 @@ configure_shell() {
     # Add ~/.cargo/bin to PATH for the current process
     export PATH="$HOME/.cargo/bin:$PATH"
 
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "rust init"
-    done
 
     write_env_snippet "rust" '. "$HOME/.cargo/env"'
 }

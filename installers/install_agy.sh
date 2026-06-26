@@ -132,11 +132,6 @@ install_agy() {
 }
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "local-bin path"
-    done
 
     write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
 }

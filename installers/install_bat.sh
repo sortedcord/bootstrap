@@ -70,14 +70,6 @@ install_bat() {
 }
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "bat alias"
-    done
-    if [ -f "$HOME/.bash_aliases" ]; then
-        remove_block "$HOME/.bash_aliases" "bat alias"
-    fi
 
     write_alias_snippet "bat" "alias cat='bat --paging=never -p'"
 }
