@@ -7,12 +7,6 @@
 # Antigravity CLI Installer Script (Linux Only)
 #
 
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
-
 set -euo pipefail
 
 # Constants
