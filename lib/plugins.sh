@@ -1,50 +1,13 @@
 #!/usr/bin/env bash
 
-if [ -f "$BOOTSTRAP_DIR/lib/json.sh" ]; then
-    . "$BOOTSTRAP_DIR/lib/json.sh"
-fi
-
-# Parses a plugin manifest using the generic json parser and outputs bash array assignments
+# Parses a plugin manifest using jq and outputs bash array assignments
 parse_plugin_manifest() {
-    # The generic parser outputs lines like:
-    # plugins.myplugin.version="1.0"
-    # plugins.myplugin.url="https://..."
-    # We want to extract myplugin and the keys to build:
-    # PLUGIN_VERSIONS["myplugin"]="1.0"
-    # PLUGIN_URLS["myplugin"]="https://..."
-    
-    parse_json | awk -F'=' '
-    {
-        path = $1
-        val = $2
-        
-        # Remove quotes around value for bash array assignment
-        gsub(/^"|"$/, "", val)
-        
-        # Match paths starting with "plugins."
-        if (match(path, /^plugins\./)) {
-            rest = substr(path, RLENGTH + 1)
-            # Find the last dot to separate plugin name from the property key
-            last_dot = 0
-            for (i=length(rest); i>0; i--) {
-                if (substr(rest, i, 1) == ".") {
-                    last_dot = i
-                    break
-                }
-            }
-            if (last_dot > 0) {
-                plugin_name = substr(rest, 1, last_dot - 1)
-                prop = substr(rest, last_dot + 1)
-                if (prop == "version") {
-                    print "PLUGIN_VERSIONS[\"" plugin_name "\"]=\"" val "\""
-                } else if (prop == "url") {
-                    print "PLUGIN_URLS[\"" plugin_name "\"]=\"" val "\""
-                } else if (prop == "bootstrap") {
-                    print "PLUGIN_BOOTSTRAP_VERSIONS[\"" plugin_name "\"]=\"" val "\""
-                }
-            }
-        }
-    }'
+    jq -r '
+        .plugins | to_entries[] | 
+        (if .value.version then "PLUGIN_VERSIONS[\"" + .key + "\"]=\"" + .value.version + "\"" else empty end),
+        (if .value.url then "PLUGIN_URLS[\"" + .key + "\"]=\"" + .value.url + "\"" else empty end),
+        (if .value.bootstrap then "PLUGIN_BOOTSTRAP_VERSIONS[\"" + .key + "\"]=\"" + .value.bootstrap + "\"" else empty end)
+    '
 }
 
 # Ensures that the plugin sources file exists, initializing it with the official repository by default

@@ -55,19 +55,12 @@ install_agy() {
         exit 1
     fi
 
-    # POSIX-compliant JSON parser (no jq dependencies)
-    parse_json_key() {
-        local payload="$1"
-        local key="$2"
-        echo "$payload" | sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
-    }
-
     local version
     local url
     local sha512
-    version=$(parse_json_key "$manifest_json" "version")
-    url=$(parse_json_key "$manifest_json" "url")
-    sha512=$(parse_json_key "$manifest_json" "sha512")
+    version=$(echo "$manifest_json" | jq -r '.version // empty')
+    url=$(echo "$manifest_json" | jq -r '.url // empty')
+    sha512=$(echo "$manifest_json" | jq -r '.sha512 // empty')
 
     if [ -z "$url" ] || [ -z "$sha512" ]; then
         log_error "Failed to parse release manifest."

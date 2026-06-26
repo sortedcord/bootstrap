@@ -41,7 +41,7 @@ else
     BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_TMP_DIR"
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh" "lib/json.sh" "lib/plugins.sh")
+    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh" "lib/plugins.sh")
     
     _curl_args=()
     for _lib in "${_LIBS[@]}"; do
@@ -82,13 +82,17 @@ install_bootstrap() {
         "lib/rollback.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
-        "lib/json.sh"
         "lib/plugins.sh"
         "commands/help.sh"
         "commands/con.sh"
         "commands/uninstall.sh"
         "commands/up.sh"
     )
+
+    if ! pkg_check jq >/dev/null 2>&1; then
+        log_info "jq is missing. Installing jq..."
+        pkg_install jq
+    fi
 
     if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/lib/routes.sh" ]; then
         log_info "Using local files from repository..."
