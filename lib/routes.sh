@@ -275,7 +275,12 @@ for script in "${SCRIPTS[@]}"; do
                 if [ -z "$target" ]; then
                     rollback_bare
                 else
-                    rollback_to_savepoint "$target"
+                    local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
+                    if [ -f "$registry_file" ] && jq -e --arg t "$target" '.tools | has($t)' "$registry_file" >/dev/null; then
+                        uninstall_tool "$target"
+                    else
+                        rollback_to_savepoint "$target"
+                    fi
                 fi
                 exit 0
                 ;;
