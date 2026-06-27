@@ -71,6 +71,7 @@ install_bootstrap() {
     mkdir -p "$routes_dir"
     mkdir -p "$routes_dir/env.d"
     mkdir -p "$routes_dir/aliases.d"
+    mkdir -p "$routes_dir/completions.d"
 
     # List of all files to download/copy
     local files=(
@@ -142,6 +143,7 @@ export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
 for f in "$BOOTSTRAP_DIR/env.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 for f in "$BOOTSTRAP_DIR/aliases.d/"*.sh; do [ -r "$f" ] && . "$f"; done
+for f in "$BOOTSTRAP_DIR/completions.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 # <<< bootstrap-cli setup <<<
 EOF
 

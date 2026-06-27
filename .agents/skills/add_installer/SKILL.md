@@ -20,7 +20,7 @@ bootstrap/
 │   ├── common.sh        # Logging, confirm(), has_command(), make_temp_dir()
 │   ├── platform.sh      # detect_distro(), detect_arch(), pkg_install(), pkg_check(), pkg_remove()
 │   ├── rollback.sh      # Rollback tracking (track_file, track_dir, add_rollback_cmd)
-│   ├── shell_config.sh  # write_env_snippet, write_alias_snippet
+│   ├── shell_config.sh  # write_env_snippet, write_alias_snippet, write_completion_snippet
 │   ├── registry.sh      # Dynamically generated installer registry
 │   └── routes.sh        # Central router script
 ├── commands/            # Non-installer commands (help, con, uninstall)
@@ -62,7 +62,7 @@ To ensure the user can seamlessly use `b rb <name>`, all manual modifications mu
 - When extracting binaries to `~/.local/bin/`, use `track_file "$HOME/.local/bin/binary"`.
 - When creating directories like `~/.config/tool/`, use `track_dir "$HOME/.config/tool"`.
 - When running manual apt/dnf/npm commands, log their inverses: `add_rollback_cmd "sudo npm uninstall -g package"`.
-Note: `pkg_install`, `write_env_snippet`, and `write_alias_snippet` will automatically track themselves.
+Note: `pkg_install`, `write_env_snippet`, `write_alias_snippet`, and `write_completion_snippet` will automatically track themselves.
 
 ### Step 4: Verify (optional)
 
@@ -126,6 +126,7 @@ configure_shell() {
     # Use drop-in snippets for shell configuration (they auto-rollback)
     # write_env_snippet "<name>" "export VAR_NAME=value\neval \"\$(<name> init bash)\""
     # write_alias_snippet "<name>" "alias <name>='<command>'"
+    # write_completion_snippet "<name>" "source <(<command> completion bash)"
     :
 }
 
@@ -184,6 +185,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 |---|---|
 | `write_env_snippet <name> <content>` | Creates an isolated `env.d/` shell drop-in snippet and registers it for rollback. |
 | `write_alias_snippet <name> <content>` | Creates an isolated `aliases.d/` shell drop-in snippet and registers it for rollback. |
+| `write_completion_snippet <name> <content>` | Creates an isolated `completions.d/` bash completion snippet and registers it for rollback. |
 
 ---
 
@@ -241,7 +243,7 @@ track_file "/usr/local/bin/binary"
 1. **File naming**: Always `install_<name>.sh` in the `installers/` directory.
 2. **Confirmation prompts**: Always ask before installing. Check if already installed first.
 3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `~/.local/bin/`, you MUST call `track_file`. If you run `makepkg`, you MUST call `add_rollback_cmd` for `pacman -R`.
-4. **Shell Drop-ins**: Always use `write_env_snippet` or `write_alias_snippet` instead of manually injecting code directly into `~/.bashrc`.
+4. **Shell Drop-ins**: Always use `write_env_snippet`, `write_alias_snippet`, or `write_completion_snippet` instead of manually injecting code directly into `~/.bashrc`.
 5. **No hardcoded paths**: Use `$HOME`, library functions, and `detect_*` helpers.
 6. **Error handling**: Use `set -euo pipefail` after the guard block.
 7. **CLI Enforcement Guard**: Always copy the standalone execution guard block verbatim to the top of your installer script to prevent direct execution.
