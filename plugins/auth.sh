@@ -7,12 +7,8 @@
 set -euo pipefail
 
 # Ensure dependencies are met
-for dep in ssh-keygen curl jq age; do
-    if ! has_command "$dep"; then
-        log_error "Dependency '$dep' is missing. Please install it to use authentication."
-        exit 1
-    fi
-done
+pkg_install "arch:openssh|debian:openssh-client|fedora:openssh-clients" "curl" "jq" "age"
+
 
 # Ensure public key exists next to private key for ssh-keygen -Y sign
 ensure_pubkey_exists() {
