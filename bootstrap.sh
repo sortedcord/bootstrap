@@ -105,6 +105,12 @@ install_bootstrap() {
             mkdir -p "$routes_dir/installers"
             cp -r "$_SCRIPT_DIR/installers/"* "$routes_dir/installers/"
         fi
+
+        # Also copy plugins if they exist locally
+        if [ -d "$_SCRIPT_DIR/plugins" ]; then
+            mkdir -p "$routes_dir/plugins"
+            cp -r "$_SCRIPT_DIR/plugins/"* "$routes_dir/plugins/"
+        fi
     else
         log_info "Downloading bootstrap scripts..."
         local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"

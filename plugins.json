@@ -1,5 +1,11 @@
 {
   "plugins": {
+    "auth": {
+      "version": "1.0.0",
+      "url": "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins/auth.sh",
+      "bootstrap": "2.2.0",
+      "description": "Client Authentication and Provisioning Plugin"
+    },
     "weather": {
       "version": "1.0.0",
       "url": "https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master/plugins/weather.sh",

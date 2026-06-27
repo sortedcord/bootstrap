@@ -86,7 +86,7 @@ _b_completion() {
 
     # If completing the first argument after 'b'
     if [ "$COMP_CWORD" -eq 1 ]; then
-        opts="all con gone up ware bware"
+        opts="all con gone up ware bware me trust"
         
         local routes_dir="$HOME/.config/bootstrap"
         local installer_keys=""
