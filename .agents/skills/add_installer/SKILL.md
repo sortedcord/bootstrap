@@ -35,17 +35,26 @@ bootstrap/
 
 When adding a new installer named `<name>`:
 
-### Step 1: Create the installer script
+### Step 1: Analyze user request & gather details
 
-Create `installers/install_<name>.sh` using the template below.
+When the user asks you to create an installer, they often provide either an official `curl` install script or a link to a `.tar.gz` release.
+You MUST do the following before writing the script:
 
-If the user provides an official install or curl script in the prompt:
-- Read and analyze the script.
-- Remove redundant parts like macOS and Windows compatibility.
-- Strip unnecessary shell boilerplate, self-update logic, and other bloat.
-- Implement only the essential Linux installation logic inside the `install_<name>` function.
+**If the user provides a `curl` command or link to an install script:**
+- Execute the `curl` command (or use `read_url_content`) to fetch the script and analyze what it actually does under the hood.
+- Do NOT simply execute the official script blindly in your installer.
+- Re-write its functionality according to the conventions of the bootstrap installer.
+- Strip away redundant code, OS checks for macOS/Windows (we only target Linux), and unnecessary shell configuration logic.
+- Implement only the core, essential Linux installation logic inside the `install_<name>` function.
 
-### Step 2: Add metadata comments to the top of your installer script
+**If the user provides a link to a `.tar.gz` (or `.zip`):**
+- First, download the archive to a temporary directory and extract it to inspect its contents.
+- Analyze the extracted folder structure to decide what needs to be installed (e.g., binaries, man pages, completions) and what should be ignored/deleted.
+- Write the `install_<name>` function to download, extract, and copy only those essential files. (Use `download_file` and temporary directories, see "Resumable Download and Extraction" below).
+
+### Step 2: Create the installer script
+
+### Step 3: Add metadata comments to the top of your installer script
 
 At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following three metadata headers:
 ```bash
@@ -56,7 +65,7 @@ At the top of your new installer script, right below `#!/usr/bin/env bash`, add 
 
 The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
 
-### Step 3: Implement Rollback Tracking (Crucial)
+### Step 4: Implement Rollback Tracking (Crucial)
 
 To ensure the user can seamlessly use `b rb <name>`, all manual modifications must be tracked:
 - When extracting binaries to `~/.local/bin/`, use `track_file "$HOME/.local/bin/binary"`.
@@ -64,7 +73,7 @@ To ensure the user can seamlessly use `b rb <name>`, all manual modifications mu
 - When running manual apt/dnf/npm commands, log their inverses: `add_rollback_cmd "sudo npm uninstall -g package"`.
 Note: `pkg_install`, `write_env_snippet`, `write_alias_snippet`, and `write_completion_snippet` will automatically track themselves.
 
-### Step 4: Verify (optional)
+### Step 5: Verify (optional)
 
 Verify that the installer works and appears in the help output:
 - Run `b all` to confirm it appears in the help list.
