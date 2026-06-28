@@ -67,6 +67,7 @@ install_bootstrap() {
     local routes_dir="$HOME/.config/bootstrap"
     mkdir -p "$routes_dir/env.d"
     mkdir -p "$routes_dir/aliases.d"
+    mkdir -p "$routes_dir/completions.d"
 
     # Initialize XDG directories
     mkdir -p "$HOME/.local/share/bootstrap/bin"
@@ -169,6 +170,7 @@ export BOOTSTRAP_RUNTIMES="$BOOTSTRAP_DATA_DIR/runtimes"
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
 for f in "$BOOTSTRAP_DIR/env.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 for f in "$BOOTSTRAP_DIR/aliases.d/"*.sh; do [ -r "$f" ] && . "$f"; done
+for f in "$BOOTSTRAP_DIR/completions.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 # <<< bootstrap-cli setup <<<
 EOF
 

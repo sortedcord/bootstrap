@@ -20,7 +20,7 @@ bootstrap/
 │   ├── common.sh        # Logging, confirm(), has_command(), make_temp_dir()
 │   ├── platform.sh      # detect_distro(), detect_arch(), pkg_install(), pkg_check(), pkg_remove()
 │   ├── rollback.sh      # Rollback tracking (track_file, track_dir, add_rollback_cmd)
-│   ├── shell_config.sh  # write_env_snippet, write_alias_snippet
+│   ├── shell_config.sh  # write_env_snippet, write_alias_snippet, write_completion_snippet
 │   ├── registry.sh      # Dynamically generated installer registry
 │   └── routes.sh        # Central router script
 ├── commands/            # Non-installer commands (help, con, uninstall)
@@ -35,18 +35,27 @@ bootstrap/
 
 When adding a new installer named `<name>`:
 
-### Step 1: Create the installer script
+### Step 1: Analyze user request & gather details
 
-Create `installers/install_<name>.sh` using the template below.
+When the user asks you to create an installer, they often provide either an official `curl` install script or a link to a `.tar.gz` release.
+You MUST do the following before writing the script:
 
-If the user provides an official install or curl script in the prompt:
-- Read and analyze the script.
-- Remove redundant parts like macOS and Windows compatibility.
-- Strip unnecessary shell boilerplate, self-update logic, and other bloat.
-- Implement only the essential Linux installation logic inside the `install_<name>` function.
+If the user provides an official install or curl script in the prompt, or a link to one:
+- Execute the `curl` command (or use `read_url_content` or `read_browser_page`) to fetch the script and analyze what it actually does under the hood.
+- Do NOT simply execute the official script blindly in your installer.
+- Re-write its functionality according to the conventions of the bootstrap installer.
+- Strip away redundant code, OS checks for macOS/Windows (we only target Linux), unnecessary shell configuration logic, and self-update logic.
+- Implement only the core, essential Linux installation logic inside the `install_<name>` function.
 - Do NOT add checks for `curl` or attempt to install it. Assume `curl` is installed and available.
 
-### Step 2: Add metadata comments to the top of your installer script
+**If the user provides a link to a `.tar.gz` (or `.zip`):**
+- First, download the archive to a temporary directory and extract it to inspect its contents.
+- Analyze the extracted folder structure to decide what needs to be installed (e.g., binaries, man pages, completions) and what should be ignored/deleted.
+- Write the `install_<name>` function to download, extract, and copy only those essential files. (Use `download_file` and temporary directories, see "Resumable Download and Extraction" below).
+
+### Step 2: Create the installer script
+
+### Step 3: Add metadata comments to the top of your installer script
 
 At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following metadata headers:
 ```bash
@@ -58,15 +67,16 @@ At the top of your new installer script, right below `#!/usr/bin/env bash`, add 
 
 The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
 
-### Step 3: Implement Rollback Tracking (Crucial)
+### Step 4: Implement Rollback Tracking (Crucial)
 
-To ensure the user can seamlessly use `b rb <name>` to uninstall or rollback a tool:
+To ensure the user can seamlessly use `b rb <name>` to uninstall or rollback a tool, all manual modifications must be tracked:
 - When extracting binaries, copy them to `$BOOTSTRAP_BIN` and use `track_file "$BOOTSTRAP_BIN/binary"`. Never use `sudo` or write to system folders like `/usr/local/bin`.
 - When creating directories (e.g., in `$BOOTSTRAP_OPT` or `$BOOTSTRAP_RUNTIMES`), use `track_dir` to register them.
 - When running manual commands (like compiling or registry changes), log their inverses: `add_rollback_cmd "rm -rf ..."` or equivalent cleanup.
-Note: `write_env_snippet` and `write_alias_snippet` will automatically track themselves.
+- When installing packages via `pkg_install`, always register them with `registry_add_sys_deps` for reference-counted rollback tracking.
+- Note: `write_env_snippet`, `write_alias_snippet`, and `write_completion_snippet` will automatically track themselves.
 
-### Step 4: Verify (optional)
+### Step 5: Verify (optional)
 
 Verify that the installer works and appears in the help output:
 - Run `b all` to confirm it appears in the help list.
@@ -121,6 +131,7 @@ configure_shell() {
     # Use drop-in snippets for shell configuration (they auto-rollback)
     # write_env_snippet "<name>" "export VAR_NAME=value\neval \"\$(<name> init bash)\""
     # write_alias_snippet "<name>" "alias <name>='<command>'"
+    # write_completion_snippet "<name>" "source <(<command> completion bash)"
     :
 }
 
@@ -179,6 +190,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 |---|---|
 | `write_env_snippet <name> <content>` | Creates an isolated `env.d/` shell drop-in snippet and registers it for rollback. |
 | `write_alias_snippet <name> <content>` | Creates an isolated `aliases.d/` shell drop-in snippet and registers it for rollback. |
+| `write_completion_snippet <name> <content>` | Creates an isolated `completions.d/` bash completion snippet and registers it for rollback. |
 
 ### From `lib/github.sh`
 
@@ -238,8 +250,8 @@ track_file "$BOOTSTRAP_BIN/binary"
 
 1. **File naming**: Always `install_<name>.sh` in the `installers/` directory.
 2. **Confirmation prompts**: Always ask before installing. Check if already installed first.
-3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `$BOOTSTRAP_BIN`, you MUST call `track_file`.
-4. **Shell Drop-ins**: Always use `write_env_snippet` or `write_alias_snippet` instead of manually injecting code directly into `~/.bashrc`.
+3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `$BOOTSTRAP_BIN`, you MUST call `track_file`. If you build/install manually (e.g. via `makepkg -si`), you MUST call `add_rollback_cmd "sudo pacman -R --noconfirm <pkg>"` or equivalent.
+4. **Shell Drop-ins**: Always use `write_env_snippet`, `write_alias_snippet`, or `write_completion_snippet` instead of manually injecting code directly into `~/.bashrc`.
 5. **No hardcoded paths**: Use `$HOME`, `$BOOTSTRAP_BIN`, `$BOOTSTRAP_OPT`, `$BOOTSTRAP_RUNTIMES`, library functions, and `detect_*` helpers.
 6. **Error handling**: Use `set -euo pipefail`.
 7. **No Standalone Execution Guards**: Do NOT add guards to prevent running the installer directly; simplify code paths to focus on clean runs.
