@@ -68,6 +68,7 @@ install_bootstrap() {
     mkdir -p "$routes_dir/env.d"
     mkdir -p "$routes_dir/aliases.d"
     mkdir -p "$routes_dir/completions.d"
+
     # Initialize XDG directories
     mkdir -p "$HOME/.local/share/bootstrap/bin"
     mkdir -p "$HOME/.local/share/bootstrap/opt"
