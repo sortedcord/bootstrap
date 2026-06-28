@@ -216,6 +216,14 @@ for script in "${SCRIPTS[@]}"; do
                     exit 1
                 fi
                 ;;
+            me)
+                run_plugin "auth" "me" "$@"
+                exit $?
+                ;;
+            trust)
+                run_plugin "auth" "trust" "$@"
+                exit $?
+                ;;
             con)
                 if [ -f "$BOOTSTRAP_DIR/commands/con.sh" ]; then
                     . "$BOOTSTRAP_DIR/commands/con.sh" "$@"
