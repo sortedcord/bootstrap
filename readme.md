@@ -119,6 +119,30 @@ b up
 b up --force
 ```
 
+### Client Authentication and Provisioning (`b me` and `b trust`)
+
+Bootstrap CLI supports a secure, cryptographic client onboarding and secrets provisioning flow. This allows you to securely register new requester devices and authorize them via an administrator device.
+
+For the complete protocol specification, including the underlying REST API and cryptographic details, see the [Client Authentication and Provisioning Specification](docs/client_spec_auth.md).
+
+#### 1. Device Registration (`b me`)
+To initiate registration on a new, unprovisioned machine, run:
+
+```bash
+b me [--server <server_url>] [--key-dir <dir>] [--poll-interval <seconds>]
+```
+
+This generates a local SSH Ed25519 key pair, registers your device in a pending state with the authentication server, displays a short `user_code`, and starts polling for administrator approval. Once approved, the encrypted payload containing secrets is retrieved, decrypted locally via `age`, and saved to `<key-dir>/secrets.decrypted`.
+
+#### 2. Request Approval (`b trust`)
+To authorize a pending device, run this command on an already provisioned administrator machine:
+
+```bash
+b trust <user_code> [--server <server_url>] [--admin-key <path_to_admin_private_key>]
+```
+
+This retrieves the pending device's public key, prompts the administrator for confirmation, cryptographically signs the public key using the admin key, and submits the approval signature back to the authentication server.
+
 ## Plugins (`b <plugin_name>`)
 
 Plugins are first-party or third-party applications written to work directly with `bootstrap`. Unlike installers (or packages) which modify your system by compiling code, downloading binaries, and altering shell configuration files, **plugins are lazy-loaded scripts that execute within a subshell**. 
@@ -225,7 +249,6 @@ The scripts are intentionally straightforward Bash scripts that can be inspected
 
 Potential additions include:
 
-* RSA based authentication
 * Development environment bootstrap
 * Workstation setup
 * Server provisioning
