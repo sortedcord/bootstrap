@@ -2,15 +2,10 @@
 # Tool: yay
 # DisplayName: Yay
 # Description: Install Yay AUR helper
+# Strategy: system
 #
 # Yay Installer Script
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -43,6 +38,7 @@ install_yay() {
     else
         log_info "Dependencies (git and base-devel) are already present. Skipping package installation."
     fi
+    registry_add_sys_deps "yay" "git" "base-devel"
 
     log_info "Cloning yay-bin repository..."
     local clone_dir
@@ -66,6 +62,7 @@ install_yay() {
     cd "$orig_dir"
     log_info "Cleaning up installer directory..."
     rm -rf "$clone_dir"
+    register_tool "yay" "system" "" "aur:yay-bin"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

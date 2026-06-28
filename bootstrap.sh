@@ -8,11 +8,6 @@ if [ -z "${BASH_VERSION:-}" ]; then
     exit 1
 fi
 
-if ! command -v curl >/dev/null 2>&1; then
-    echo "Error: curl is required to run this script." >&2
-    exit 1
-fi
-
 # Detect if the script is sourced
 is_sourced=false
 if [ -n "${BASH_SOURCE[0]:-}" ] && [ "${BASH_SOURCE[0]}" != "$0" ]; then
@@ -25,7 +20,7 @@ fi
 
 # Locate or download libraries so that sourced installers can use them
 BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)" || _SCRIPT_DIR="$(pwd)"
 
 if [ -f "$_SCRIPT_DIR/lib/common.sh" ]; then
     # Dev/local mode: source directly from repo
@@ -41,7 +36,7 @@ else
     BOOTSTRAP_SOURCE_DIR="$BOOTSTRAP_TMP_DIR"
     
     _BASE_URL="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
-    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh" "lib/json.sh" "lib/plugins.sh")
+    _LIBS=("lib/common.sh" "lib/rollback.sh" "lib/platform.sh" "lib/shell_config.sh" "lib/plugins.sh" "lib/registry_helpers.sh" "lib/github.sh")
     
     _curl_args=()
     for _lib in "${_LIBS[@]}"; do
@@ -56,6 +51,8 @@ if [ -f "$BOOTSTRAP_SOURCE_DIR/lib/common.sh" ]; then
     . "$BOOTSTRAP_SOURCE_DIR/lib/rollback.sh"
     . "$BOOTSTRAP_SOURCE_DIR/lib/platform.sh"
     . "$BOOTSTRAP_SOURCE_DIR/lib/shell_config.sh"
+    . "$BOOTSTRAP_SOURCE_DIR/lib/registry_helpers.sh"
+    . "$BOOTSTRAP_SOURCE_DIR/lib/github.sh"
     init_rollback_system
 else
     echo "Error: Failed to locate or download bootstrap libraries." >&2
@@ -68,10 +65,26 @@ install_bootstrap() {
     [ -f "$HOME/.bashrc" ] && target_files+=("$HOME/.bashrc")
 
     local routes_dir="$HOME/.config/bootstrap"
-    mkdir -p "$routes_dir"
     mkdir -p "$routes_dir/env.d"
     mkdir -p "$routes_dir/aliases.d"
     mkdir -p "$routes_dir/completions.d"
+    # Initialize XDG directories
+    mkdir -p "$HOME/.local/share/bootstrap/bin"
+    mkdir -p "$HOME/.local/share/bootstrap/opt"
+    mkdir -p "$HOME/.local/share/bootstrap/runtimes"
+    mkdir -p "$HOME/.local/state/bootstrap/logs"
+    mkdir -p "$HOME/.local/state/bootstrap/rollback"
+    mkdir -p "$HOME/.cache/bootstrap/downloads"
+    mkdir -p "$HOME/.cache/bootstrap/tmp"
+
+    # Create the universal binary PATH snippet
+    cat << 'EOF' > "$routes_dir/env.d/bootstrap-bin.sh"
+export BOOTSTRAP_BIN="$BOOTSTRAP_BIN"
+case ":$PATH:" in
+  *":$BOOTSTRAP_BIN:"*) ;;
+  *) export PATH="$BOOTSTRAP_BIN:$PATH" ;;
+esac
+EOF
 
     # List of all files to download/copy
     local files=(
@@ -83,13 +96,19 @@ install_bootstrap() {
         "lib/rollback.sh"
         "lib/platform.sh"
         "lib/shell_config.sh"
-        "lib/json.sh"
+        "lib/registry_helpers.sh"
+        "lib/github.sh"
         "lib/plugins.sh"
         "commands/help.sh"
         "commands/con.sh"
         "commands/uninstall.sh"
         "commands/up.sh"
     )
+
+    if ! pkg_check jq >/dev/null 2>&1; then
+        log_info "jq is missing. Installing jq..."
+        pkg_install jq
+    fi
 
     if [ -f "$_SCRIPT_DIR/b.sh" ] && [ -f "$_SCRIPT_DIR/lib/routes.sh" ]; then
         log_info "Using local files from repository..."
@@ -140,6 +159,13 @@ install_bootstrap() {
 
 # >>> bootstrap-cli setup >>>
 export BOOTSTRAP_DIR="$HOME/.config/bootstrap"
+export BOOTSTRAP_DATA_DIR="$HOME/.local/share/bootstrap"
+export BOOTSTRAP_STATE_DIR="$HOME/.local/state/bootstrap"
+export BOOTSTRAP_CACHE_DIR="$HOME/.cache/bootstrap"
+export BOOTSTRAP_BIN="$BOOTSTRAP_DATA_DIR/bin"
+export BOOTSTRAP_OPT="$BOOTSTRAP_DATA_DIR/opt"
+export BOOTSTRAP_RUNTIMES="$BOOTSTRAP_DATA_DIR/runtimes"
+
 [ -f "$BOOTSTRAP_DIR/b.sh" ] && . "$BOOTSTRAP_DIR/b.sh"
 for f in "$BOOTSTRAP_DIR/env.d/"*.sh; do [ -r "$f" ] && . "$f"; done
 for f in "$BOOTSTRAP_DIR/aliases.d/"*.sh; do [ -r "$f" ] && . "$f"; done
@@ -243,7 +269,7 @@ EOF
             # Display centered version of bootstrap in bold
             _version=""
             if [ -f "$_version_file" ]; then
-                _version=$(cat "$_version_file" | tr -d '\r\n')
+                _version=$(tr -d '\r\n' < "$_version_file")
             fi
             if [ -z "$_version" ]; then
                 _version="0.0.0" # Fallback if VERSION missing
@@ -310,6 +336,7 @@ EOF
 
     # Load the b function immediately in the current subshell
     if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        # shellcheck source=/dev/null
         . "$HOME/.config/bootstrap/b.sh"
     fi
 
@@ -322,6 +349,7 @@ else
     # Sourced mode (e.g., when sourced by installers or manually by user)
     # Load the b function in the current shell context
     if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        # shellcheck source=/dev/null
         . "$HOME/.config/bootstrap/b.sh"
     fi
 fi

@@ -2,6 +2,7 @@
 # Tool: pnpm
 # DisplayName: Pnpm
 # Description: Install pnpm package manager
+# Strategy: binary
 #
 # pnpm Installer Script
 #
@@ -16,12 +17,6 @@
 # Docker usage:
 #   curl -fsSL https://get.pnpm.io/install.sh | ENV="$HOME/.bashrc" SHELL="$(which bash)" bash -
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -127,14 +122,17 @@ install_pnpm() {
     }
     libc_suffix="$(detect_libc_suffix)"
 
-    # Fetch the latest version from the npm registry, or use PNPM_VERSION if set
+    # Fetch the latest version from GitHub, or use PNPM_VERSION if set
     if [ -z "${PNPM_VERSION:-}" ]; then
-        log_info "Fetching latest pnpm version from npm registry..."
-        version_json="$(download "https://registry.npmjs.org/@pnpm/exe")" || {
-            log_error "Failed to fetch pnpm version info from npm registry."
+        log_info "Fetching latest pnpm version from GitHub..."
+        local tag
+        tag=$(github_get_latest_release "pnpm/pnpm")
+        if [ -n "$tag" ]; then
+            version="${tag#v}"
+        else
+            log_error "Failed to fetch pnpm version info from GitHub."
             return 1
-        }
-        version="$(echo "$version_json" | grep -o '"latest":[[:space:]]*"[0-9.]*"' | grep -o '[0-9.]*')"
+        fi
     else
         version="${PNPM_VERSION}"
     fi
@@ -151,7 +149,7 @@ install_pnpm() {
 
     if [ "$major_version" -ge 11 ]; then
         # v11+: distributed as tarballs containing the binary and dist/ directory
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}.tar.gz" "$TMP_DIR/pnpm.tar.gz" || {
+        github_download_asset "pnpm/pnpm" "v${version}" "${asset_base}\.tar\.gz" "$TMP_DIR/pnpm.tar.gz" || {
             log_error "Failed to download pnpm tarball."
             return 1
         }
@@ -166,7 +164,7 @@ install_pnpm() {
         }
     else
         # Older versions: distributed as a single executable binary
-        download "https://github.com/pnpm/pnpm/releases/download/v${version}/${asset_base}" "$TMP_DIR/pnpm" || {
+        github_download_asset "pnpm/pnpm" "v${version}" "${asset_base}" "$TMP_DIR/pnpm" || {
             log_error "Failed to download pnpm binary."
             return 1
         }
@@ -179,23 +177,19 @@ install_pnpm() {
 
     track_dir "$HOME/.local/share/pnpm"
     log_success "pnpm v${version} installed successfully!"
+    register_tool "pnpm" "binary" "$version" "github:pnpm/pnpm"
 }
 
 # ─── Shell Configuration ─────────────────────────────────────────────
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "pnpm setup"
-    done
 
     # pnpm's `setup --force` configures PNPM_HOME and PATH automatically,
     # but we also add an env block to ensure PNPM_HOME is set consistently.
     local content
     content=$(cat << 'EOF'
 # pnpm
-export PNPM_HOME="$HOME/.local/share/pnpm"
+export PNPM_HOME="$BOOTSTRAP_RUNTIMES/pnpm"
 case ":$PATH:" in
   *":$PNPM_HOME:"*) ;;
   *) export PATH="$PNPM_HOME:$PATH" ;;

@@ -1,21 +1,18 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tool: nvim
 # DisplayName: Neovim
 # Description: Install Neovim 0.12.0 and configuration
+# Strategy: binary
 #
 # Neovim Installer Script
 #
 
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
-
 set -euo pipefail
 
 NVIM_VERSION="0.12.0"
-NVIM_INSTALL_DIR="/opt/nvim"
+NVIM_INSTALL_DIR="$BOOTSTRAP_OPT/nvim"
+NVIM_BIN_DIR="$BOOTSTRAP_BIN"
 NVIM_CONFIG_REPO="https://git.adityagupta.dev/sortedcord/editor.git"
 NVIM_CONFIG_DIR="$HOME/.config/nvim"
 
@@ -33,7 +30,18 @@ check_config_dir() {
 install_packages() {
     log_info "Detecting distribution and installing dependencies..."
     pkg_install \
-        git tar curl unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        git tar unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        "arch:fd|debian:fd-find|fedora:fd-find" \
+        "arch:cmake|debian:cmake|fedora:cmake" \
+        "arch:make|debian:build-essential|fedora:make" \
+        "arch:gcc|debian:build-essential|fedora:gcc" \
+        "arch:python|debian:python3|fedora:python3" \
+        "debian:python3-pip|fedora:python3-pip" \
+        "debian:python3-venv" \
+        "fedora:gcc-c++"
+        
+    registry_add_sys_deps "nvim" \
+        git tar unzip ripgrep fzf nodejs npm xclip wl-clipboard \
         "arch:fd|debian:fd-find|fedora:fd-find" \
         "arch:cmake|debian:cmake|fedora:cmake" \
         "arch:make|debian:build-essential|fedora:make" \
@@ -76,23 +84,23 @@ install_nvim() {
         *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
     esac
 
-    local nvim_url="https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-${nvim_arch}.tar.gz"
-
     log_info "Downloading Neovim v${NVIM_VERSION} for ${arch}..."
-    download_file "$nvim_url" "$TMP_DIR/nvim.tar.gz"
+    github_download_asset "neovim/neovim" "v${NVIM_VERSION}" "nvim-${nvim_arch}\.tar\.gz" "$TMP_DIR/nvim.tar.gz"
 
     tar -xzf "$TMP_DIR/nvim.tar.gz" -C "$TMP_DIR"
 
-    sudo rm -rf "$NVIM_INSTALL_DIR"
-    sudo mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
+    rm -rf "$NVIM_INSTALL_DIR"
+    mkdir -p "$(dirname "$NVIM_INSTALL_DIR")"
+    mv "$TMP_DIR/nvim-${nvim_arch}" "$NVIM_INSTALL_DIR"
 
-    sudo ln -sf "$NVIM_INSTALL_DIR/bin/nvim" /usr/local/bin/nvim
+    ln -sf "$NVIM_INSTALL_DIR/bin/nvim" "$NVIM_BIN_DIR/nvim"
     
     track_dir "$NVIM_INSTALL_DIR"
-    track_file "/usr/local/bin/nvim"
+    track_file "$NVIM_BIN_DIR/nvim"
 
     log_success "Installed:"
     nvim --version | head -n1
+    register_tool "nvim" "binary" "$NVIM_VERSION" "github:neovim/neovim"
 }
 
 install_config() {
@@ -111,24 +119,6 @@ install_config() {
 }
 
 configure_shell() {
-    # Clean up legacy inline edits from bashrc and bash_aliases
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        if [ -f "$config_file" ]; then
-            local tmp_file
-            tmp_file=$(mktemp)
-            sed '/^export EDITOR="nvim"/d' "$config_file" > "$tmp_file"
-            cat "$tmp_file" > "$config_file"
-            rm -f "$tmp_file"
-        fi
-    done
-    if [ -f "$HOME/.bash_aliases" ]; then
-        local tmp_file
-        tmp_file=$(mktemp)
-        sed '/^alias vim="nvim"/d' "$HOME/.bash_aliases" > "$tmp_file"
-        cat "$tmp_file" > "$HOME/.bash_aliases"
-        rm -f "$tmp_file"
-    fi
 
     write_alias_snippet "nvim" 'alias vim="nvim"'
     write_env_snippet "nvim" 'export EDITOR="nvim"'

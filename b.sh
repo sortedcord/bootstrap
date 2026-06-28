@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # >>> bootstrap-cli b function >>>
 # Shortcut for downloading and running bootstrap/install scripts
 b() {
@@ -19,6 +20,7 @@ b() {
     _version_lt() {
         [ "$1" = "$2" ] && return 1
         local IFS=.
+        # shellcheck disable=SC2206
         local i ver1=($1) ver2=($2)
         for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
         for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done
@@ -41,7 +43,7 @@ b() {
 
             local base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"
             local local_ver="0.0.0"
-            [ -f "$routes_dir/VERSION" ] && local_ver=$(cat "$routes_dir/VERSION" 2>/dev/null | tr -d '[:space:]')
+            [ -f "$routes_dir/VERSION" ] && local_ver=$(tr -d '[:space:]' < "$routes_dir/VERSION" 2>/dev/null)
 
             local remote_ver
             if remote_ver=$(curl -fsSL "$base_url/VERSION" 2>/dev/null); then
@@ -71,6 +73,7 @@ b() {
     # Sourced again in the parent shell after successfully running the command
     if [ $ret -eq 0 ]; then
         if [ -f "$HOME/.bashrc" ]; then
+            # shellcheck source=/dev/null
             . "$HOME/.bashrc"
         fi
     fi
@@ -123,6 +126,7 @@ _b_completion() {
             return 0
         fi
 
+        # shellcheck disable=SC2207
         COMPREPLY=( $(compgen -W "$opts" -- "$cur") )
         return 0
     fi
@@ -161,6 +165,7 @@ _b_completion() {
             return 0
         fi
 
+        # shellcheck disable=SC2207
         COMPREPLY=( $(compgen -W "$installer_keys" -- "$cur") )
         return 0
     fi
@@ -170,6 +175,7 @@ _b_completion() {
         # List of directories in ~/.config/ to choose from
         local config_dirs
         config_dirs=$(find "$HOME/.config" -mindepth 1 -maxdepth 1 -type d -exec basename {} \; 2>/dev/null)
+        # shellcheck disable=SC2207
         COMPREPLY=( $(compgen -W "$config_dirs" -- "$cur") )
         return 0
     fi

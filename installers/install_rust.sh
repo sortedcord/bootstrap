@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tool: rust
 # DisplayName: Rust
 # Description: Install Rustup and Rust compiler/toolchain
+# Strategy: managed
 #
 # Rust Installer Script (Simplified Local Rustup Init)
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -19,14 +15,6 @@ cleanup() {
     rm -rf "$TMP_DIR"
 }
 trap cleanup EXIT
-
-# Ensure we have curl
-install_downloader() {
-    if ! has_command curl; then
-        log_info "curl not found. Installing curl..."
-        pkg_install curl
-    fi
-}
 
 detect_target_triple() {
     local ostype
@@ -61,11 +49,14 @@ detect_target_triple() {
 }
 
 install_rust() {
-    if has_command rustup || [ -f "$HOME/.cargo/bin/rustup" ]; then
+    export CARGO_HOME="$BOOTSTRAP_RUNTIMES/cargo"
+    export RUSTUP_HOME="$BOOTSTRAP_RUNTIMES/rustup"
+
+    if has_command rustup || [ -f "$BOOTSTRAP_RUNTIMES/cargo/bin/rustup" ]; then
         log_info "Rust (rustup) is already installed."
     fi
 
-    install_downloader
+
 
     local target
     target=$(detect_target_triple)
@@ -87,19 +78,19 @@ install_rust() {
     "$dest" -y --no-modify-path
     
     add_rollback_cmd "rustup self uninstall -y"
+    register_tool "rust" "managed" "" "rustup"
 }
 
 configure_shell() {
-    # Add ~/.cargo/bin to PATH for the current process
-    export PATH="$HOME/.cargo/bin:$PATH"
 
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "rust init"
-    done
 
-    write_env_snippet "rust" '. "$HOME/.cargo/env"'
+    local snippet_content=$(cat << 'EOF'
+export CARGO_HOME="$BOOTSTRAP_RUNTIMES/cargo"
+export RUSTUP_HOME="$BOOTSTRAP_RUNTIMES/rustup"
+. "$CARGO_HOME/env"
+EOF
+)
+    write_env_snippet "rust" "$snippet_content"
 }
 
 main() {

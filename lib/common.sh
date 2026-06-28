@@ -7,6 +7,15 @@ if [ -n "${_LIB_COMMON_SOURCED:-}" ]; then
 fi
 _LIB_COMMON_SOURCED=1
 
+# Export global environment paths with default fallbacks
+export BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
+export BOOTSTRAP_DATA_DIR="${BOOTSTRAP_DATA_DIR:-$HOME/.local/share/bootstrap}"
+export BOOTSTRAP_STATE_DIR="${BOOTSTRAP_STATE_DIR:-$HOME/.local/state/bootstrap}"
+export BOOTSTRAP_CACHE_DIR="${BOOTSTRAP_CACHE_DIR:-$HOME/.cache/bootstrap}"
+export BOOTSTRAP_BIN="${BOOTSTRAP_BIN:-$BOOTSTRAP_DATA_DIR/bin}"
+export BOOTSTRAP_OPT="${BOOTSTRAP_OPT:-$BOOTSTRAP_DATA_DIR/opt}"
+export BOOTSTRAP_RUNTIMES="${BOOTSTRAP_RUNTIMES:-$BOOTSTRAP_DATA_DIR/runtimes}"
+
 # Ensure running in Bash
 require_bash() {
     if [ -z "${BASH_VERSION:-}" ]; then
@@ -72,6 +81,7 @@ make_temp_dir() {
 version_lt() {
     [ "$1" = "$2" ] && return 1
     local IFS=.
+    # shellcheck disable=SC2206
     local i ver1=($1) ver2=($2)
     for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
     for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done
@@ -88,7 +98,7 @@ version_lt() {
 download_file() {
     local url="$1"
     local dest="$2"
-    local cache_dir="$HOME/.local/state/bootstrap/cache"
+    local cache_dir="$BOOTSTRAP_CACHE_DIR/downloads"
     
     mkdir -p "$cache_dir"
     

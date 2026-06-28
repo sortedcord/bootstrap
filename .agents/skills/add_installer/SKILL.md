@@ -40,12 +40,13 @@ When adding a new installer named `<name>`:
 When the user asks you to create an installer, they often provide either an official `curl` install script or a link to a `.tar.gz` release.
 You MUST do the following before writing the script:
 
-**If the user provides a `curl` command or link to an install script:**
-- Execute the `curl` command (or use `read_url_content`) to fetch the script and analyze what it actually does under the hood.
+If the user provides an official install or curl script in the prompt, or a link to one:
+- Execute the `curl` command (or use `read_url_content` or `read_browser_page`) to fetch the script and analyze what it actually does under the hood.
 - Do NOT simply execute the official script blindly in your installer.
 - Re-write its functionality according to the conventions of the bootstrap installer.
-- Strip away redundant code, OS checks for macOS/Windows (we only target Linux), and unnecessary shell configuration logic.
+- Strip away redundant code, OS checks for macOS/Windows (we only target Linux), unnecessary shell configuration logic, and self-update logic.
 - Implement only the core, essential Linux installation logic inside the `install_<name>` function.
+- Do NOT add checks for `curl` or attempt to install it. Assume `curl` is installed and available.
 
 **If the user provides a link to a `.tar.gz` (or `.zip`):**
 - First, download the archive to a temporary directory and extract it to inspect its contents.
@@ -56,22 +57,24 @@ You MUST do the following before writing the script:
 
 ### Step 3: Add metadata comments to the top of your installer script
 
-At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following three metadata headers:
+At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following metadata headers:
 ```bash
 # Tool: <name>
 # DisplayName: <displayName>
 # Description: <description>
+# Strategy: <strategy> (binary | managed | system)
 ```
 
 The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
 
 ### Step 4: Implement Rollback Tracking (Crucial)
 
-To ensure the user can seamlessly use `b rb <name>`, all manual modifications must be tracked:
-- When extracting binaries to `~/.local/bin/`, use `track_file "$HOME/.local/bin/binary"`.
-- When creating directories like `~/.config/tool/`, use `track_dir "$HOME/.config/tool"`.
-- When running manual apt/dnf/npm commands, log their inverses: `add_rollback_cmd "sudo npm uninstall -g package"`.
-Note: `pkg_install`, `write_env_snippet`, `write_alias_snippet`, and `write_completion_snippet` will automatically track themselves.
+To ensure the user can seamlessly use `b rb <name>` to uninstall or rollback a tool, all manual modifications must be tracked:
+- When extracting binaries, copy them to `$BOOTSTRAP_BIN` and use `track_file "$BOOTSTRAP_BIN/binary"`. Never use `sudo` or write to system folders like `/usr/local/bin`.
+- When creating directories (e.g., in `$BOOTSTRAP_OPT` or `$BOOTSTRAP_RUNTIMES`), use `track_dir` to register them.
+- When running manual commands (like compiling or registry changes), log their inverses: `add_rollback_cmd "rm -rf ..."` or equivalent cleanup.
+- When installing packages via `pkg_install`, always register them with `registry_add_sys_deps` for reference-counted rollback tracking.
+- Note: `write_env_snippet`, `write_alias_snippet`, and `write_completion_snippet` will automatically track themselves.
 
 ### Step 5: Verify (optional)
 
@@ -84,22 +87,15 @@ Verify that the installer works and appears in the help output:
 
 ## Installer Script Template
 
-Every installer follows this exact boilerplate structure. Copy this and fill in the tool-specific logic:
+Every installer follows this exact structure. Copy this and fill in the tool-specific logic (notice there are no standalone execution guards or curl checks):
 
 ```bash
 #!/usr/bin/env bash
 # Tool: <name>
 # DisplayName: <ToolName>
 # Description: Short description of what it installs
+# Strategy: <strategy> (binary | managed | system)
 #
-# <ToolName> Installer Script
-#
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -119,14 +115,14 @@ install_<name>() {
     fi
 
     # --- Tool-specific installation logic goes here ---
-    # Use pkg_install for distro packages (it automatically handles rollback hooks!):
+    # Use pkg_install for distro packages:
     #   pkg_install "arch:<pkg_a>|debian:<pkg_d>|fedora:<pkg_f>"
     
     # Or manual downloads (always use download_file for resumability!):
     #   local url="https://..."
     #   download_file "$url" "$TMP_DIR/binary"
-    #   cp "$TMP_DIR/binary" "$HOME/.local/bin/binary"
-    #   track_file "$HOME/.local/bin/binary"  # Important for rollback!
+    #   cp "$TMP_DIR/binary" "$BOOTSTRAP_BIN/binary"
+    #   track_file "$BOOTSTRAP_BIN/binary"  # Important for rollback!
 }
 
 # ─── Shell Configuration (if needed) ─────────────────────────────────
@@ -169,7 +165,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 | `confirm "prompt"` | Interactive yes/no prompt, returns 0 for yes |
 | `has_command <cmd>` | Check if a command exists (returns 0/1) |
 | `make_temp_dir` | Create and echo a temp directory path |
-| `download_file <url> <dest>` | Resumable and cached download of `<url>` to `<dest>`. Uses `~/.local/state/bootstrap/cache/`. |
+| `download_file <url> <dest>` | Resumable and cached download of `<url>` to `<dest>`. Uses `$BOOTSTRAP_CACHE_DIR/downloads/`. |
 
 ### From `lib/platform.sh`
 
@@ -177,7 +173,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 |---|---|
 | `detect_distro` | Echoes `arch`, `debian`, `fedora`, or `unknown` |
 | `detect_arch` | Echoes `x86_64` or `arm64` |
-| `pkg_install <pkg>...` | Install packages. Supports distro mapping: `"arch:pkg_a\|debian:pkg_d\|fedora:pkg_f"`. Automatically integrates with rollback context and handles package reference counting. |
+| `pkg_install <pkg>...` | Install packages. Supports distro mapping: `"arch:pkg_a\|debian:pkg_d\|fedora:pkg_f"`. |
 | `pkg_check <pkg>...` | Returns 0 if packages are installed. Supports identical mapping syntax. |
 
 ### From `lib/rollback.sh`
@@ -186,7 +182,7 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 |---|---|
 | `track_file <path>` | Registers a file for deletion during `b rb` rollback. |
 | `track_dir <path>` | Registers a directory for recursive deletion during rollback. |
-| `add_rollback_cmd <cmd>` | Adds a raw bash command to the uninstall manifest (e.g., `add_rollback_cmd "sudo npm uninstall -g <pkg>"`). |
+| `add_rollback_cmd <cmd>` | Adds a raw bash command to the uninstall manifest (e.g., `add_rollback_cmd "rm -rf <path>"`). |
 
 ### From `lib/shell_config.sh`
 
@@ -195,6 +191,14 @@ These are pre-loaded by `bootstrap.sh` — no need to source them manually in in
 | `write_env_snippet <name> <content>` | Creates an isolated `env.d/` shell drop-in snippet and registers it for rollback. |
 | `write_alias_snippet <name> <content>` | Creates an isolated `aliases.d/` shell drop-in snippet and registers it for rollback. |
 | `write_completion_snippet <name> <content>` | Creates an isolated `completions.d/` bash completion snippet and registers it for rollback. |
+
+### From `lib/github.sh`
+
+| Function | Description |
+|---|---|
+| `github_get_latest_release <repo>` | Fetches the latest release tag (e.g., `v1.0.0`) from the GitHub API. |
+| `github_get_download_url <repo> <tag> <regex>` | Finds an asset matching a regex in the specified release and prints its URL. |
+| `github_download_asset <repo> <tag> <regex> <dest>` | Resolves the URL for the matching asset and downloads it directly to `<dest>`. |
 
 ---
 
@@ -211,18 +215,14 @@ trap cleanup EXIT
 ### Distro-specific mapping
 
 ```bash
-pkg_install "arch:neovim|debian:nvim|fedora:neovim" "curl" "git"
+pkg_install "arch:neovim|debian:nvim|fedora:neovim" "git"
 ```
 
 ### Fetching latest GitHub release tag
 
 ```bash
 local latest_tag=""
-if has_command curl; then
-    latest_tag=$(curl -sL https://api.github.com/repos/<owner>/<repo>/releases/latest \
-        | grep '"tag_name":' | head -n1 \
-        | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
-fi
+latest_tag=$(github_get_latest_release "owner/repo")
 
 if [ -z "$latest_tag" ]; then
     latest_tag="v1.0.0"  # fallback
@@ -230,19 +230,18 @@ if [ -z "$latest_tag" ]; then
 fi
 ```
 
-### Resumable Download and Extraction
+### GitHub Download and Extraction
 
 ```bash
-local url="https://github.com/owner/repo/releases/download/${version}/archive.tar.gz"
-local dest="$TMP_DIR/archive.tar.gz"
+local archive="$TMP_DIR/archive.tar.gz"
 
-# Resumable, cached download
-download_file "$url" "$dest"
+# Download the asset matching a regex pattern for the specific release tag
+github_download_asset "owner/repo" "$latest_tag" "app-.*-linux-x86_64\.tar\.gz" "$archive"
 
 # Extract and install
-tar -xzf "$dest" -C "$TMP_DIR"
-sudo cp "$TMP_DIR/binary" /usr/local/bin/binary
-track_file "/usr/local/bin/binary"
+tar -xzf "$archive" -C "$TMP_DIR"
+cp "$TMP_DIR/binary" "$BOOTSTRAP_BIN/binary"
+track_file "$BOOTSTRAP_BIN/binary"
 ```
 
 ---
@@ -251,10 +250,10 @@ track_file "/usr/local/bin/binary"
 
 1. **File naming**: Always `install_<name>.sh` in the `installers/` directory.
 2. **Confirmation prompts**: Always ask before installing. Check if already installed first.
-3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `~/.local/bin/`, you MUST call `track_file`. If you run `makepkg`, you MUST call `add_rollback_cmd` for `pacman -R`.
+3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `$BOOTSTRAP_BIN`, you MUST call `track_file`. If you build/install manually (e.g. via `makepkg -si`), you MUST call `add_rollback_cmd "sudo pacman -R --noconfirm <pkg>"` or equivalent.
 4. **Shell Drop-ins**: Always use `write_env_snippet`, `write_alias_snippet`, or `write_completion_snippet` instead of manually injecting code directly into `~/.bashrc`.
-5. **No hardcoded paths**: Use `$HOME`, library functions, and `detect_*` helpers.
-6. **Error handling**: Use `set -euo pipefail` after the guard block.
-7. **CLI Enforcement Guard**: Always copy the standalone execution guard block verbatim to the top of your installer script to prevent direct execution.
-8. **Clean Official Scripts**: When implementing official curl/install scripts provided in the prompt, strip them of bloat, macOS/Windows support, and redundant shell setups before writing the script.
+5. **No hardcoded paths**: Use `$HOME`, `$BOOTSTRAP_BIN`, `$BOOTSTRAP_OPT`, `$BOOTSTRAP_RUNTIMES`, library functions, and `detect_*` helpers.
+6. **Error handling**: Use `set -euo pipefail`.
+7. **No Standalone Execution Guards**: Do NOT add guards to prevent running the installer directly; simplify code paths to focus on clean runs.
+8. **Clean Official Scripts**: When implementing official curl/install scripts, strip them of bloat, macOS/Windows support, and redundant shell setups. Do not check or install `curl`.
 9. **No manual shell re-sourcing**: Do NOT manually run `source ~/.bashrc` or print instructions asking the user to run it. Sourcing of the shell configuration is handled automatically by the central router and CLI at the end of the installation.

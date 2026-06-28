@@ -2,15 +2,10 @@
 # Tool: asciicinema
 # DisplayName: asciicinema
 # Description: Install asciinema terminal recorder
+# Strategy: binary
 #
 # asciinema Installer Script
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -21,12 +16,9 @@ cleanup() {
 trap cleanup EXIT
 
 install_asciicinema() {
-    local latest_tag=""
     if has_command curl; then
         log_info "Fetching latest asciinema version from GitHub..."
-        latest_tag=$(curl -sL https://api.github.com/repos/asciinema/asciinema/releases/latest \
-            | grep '"tag_name":' | head -n1 \
-            | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+        latest_tag=$(github_get_latest_release "asciinema/asciinema")
     fi
 
     if [ -z "$latest_tag" ]; then
@@ -73,22 +65,21 @@ install_asciicinema() {
         *)      log_error "Unsupported architecture: $arch"; exit 1 ;;
     esac
 
-    local download_url="https://github.com/asciinema/asciinema/releases/download/${latest_tag}/asciinema-${asciinema_arch}"
-    
     log_info "Downloading asciinema ${latest_tag} for ${arch}..."
-    download_file "$download_url" "$TMP_DIR/asciinema"
+    github_download_asset "asciinema/asciinema" "$latest_tag" "asciinema-${asciinema_arch}" "$TMP_DIR/asciinema"
 
-    log_info "Installing asciinema to /usr/local/bin..."
-    sudo cp "$TMP_DIR/asciinema" /usr/local/bin/asciinema
-    sudo chmod +x /usr/local/bin/asciinema
-    track_file "/usr/local/bin/asciinema"
+    log_info "Installing asciinema to $BOOTSTRAP_BIN..."
+    cp "$TMP_DIR/asciinema" "$BOOTSTRAP_BIN/asciinema"
+    chmod +x "$BOOTSTRAP_BIN/asciinema"
+    track_file "$BOOTSTRAP_BIN/asciinema"
 
     # Create compatibility symlink matching the installer name spelling
     log_info "Creating compatibility symlink for asciicinema..."
-    sudo ln -sf /usr/local/bin/asciinema /usr/local/bin/asciicinema
+    ln -sf "$BOOTSTRAP_BIN/asciinema" /usr/local/bin/asciicinema
     track_file "/usr/local/bin/asciicinema"
 
     log_success "asciinema ${latest_tag} installed."
+    register_tool "asciicinema" "binary" "$latest_tag" "github:asciinema/asciinema"
 }
 
 main() {

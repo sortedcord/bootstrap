@@ -2,15 +2,10 @@
 # Tool: docker
 # DisplayName: Docker
 # Description: Container runtime and orchestration platform
+# Strategy: system
 #
 # Docker Installer Script
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -29,8 +24,9 @@ install_docker() {
         fi
     fi
 
-    # Use pkg_install for distro packages (it automatically handles rollback hooks for the packages!)
+    # Use pkg_install for distro packages and explicitly register them for reference-counted rollback
     pkg_install "arch:docker|debian:docker.io|fedora:docker"
+    registry_add_sys_deps "docker" "arch:docker|debian:docker.io|fedora:docker"
 
     # Ensure docker group exists (some distros might not create it immediately)
     if ! getent group docker >/dev/null 2>&1; then
@@ -58,6 +54,7 @@ install_docker() {
         sudo systemctl enable --now docker.service || true
         sudo systemctl enable --now containerd.service || true
     fi
+    register_tool "docker" "system" "" "os-package-manager"
 }
 
 # ─── Main ─────────────────────────────────────────────────────────────

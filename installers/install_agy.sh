@@ -2,21 +2,16 @@
 # Tool: agy
 # DisplayName: Antigravity
 # Description: Install Antigravity CLI
+# Strategy: binary
 #
 # Antigravity CLI Installer Script (Linux Only)
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
 # Constants
 DOWNLOAD_BASE_URL="https://antigravity-cli-auto-updater-974169037036.us-central1.run.app"
-TARGET_DIR="$HOME/.local/bin"
+TARGET_DIR="$BOOTSTRAP_BIN"
 BINARY_PATH="$TARGET_DIR/agy"
 
 install_agy() {
@@ -55,19 +50,12 @@ install_agy() {
         exit 1
     fi
 
-    # POSIX-compliant JSON parser (no jq dependencies)
-    parse_json_key() {
-        local payload="$1"
-        local key="$2"
-        echo "$payload" | sed -n 's/.*"'"$key"'"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
-    }
-
     local version
     local url
     local sha512
-    version=$(parse_json_key "$manifest_json" "version")
-    url=$(parse_json_key "$manifest_json" "url")
-    sha512=$(parse_json_key "$manifest_json" "sha512")
+    version=$(echo "$manifest_json" | jq -r '.version // empty')
+    url=$(echo "$manifest_json" | jq -r '.url // empty')
+    sha512=$(echo "$manifest_json" | jq -r '.sha512 // empty')
 
     if [ -z "$url" ] || [ -z "$sha512" ]; then
         log_error "Failed to parse release manifest."
@@ -134,16 +122,11 @@ install_agy() {
     track_file "$BINARY_PATH"
 
     log_success "Antigravity CLI successfully installed to $BINARY_PATH."
+    register_tool "agy" "binary" "" "github:sortedcord/agy"
 }
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "local-bin path"
-    done
 
-    write_env_snippet "local-bin" 'export PATH="$HOME/.local/bin:$PATH"'
 }
 
 run_handoff() {

@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Command: uninstall (gone)
 # Removes bootstrap CLI and cleans up shell configuration files
 
@@ -45,7 +46,6 @@ if [ -f "$HOME/.bash_aliases" ]; then
     
     # 2. Remove specific aliases added by bootstrap (e.g. vim -> nvim)
     if grep -q '^alias vim="nvim"$' "$HOME/.bash_aliases" 2>/dev/null; then
-        local tmp_file
         tmp_file=$(mktemp)
         sed '/^alias vim="nvim"$/d' "$HOME/.bash_aliases" > "$tmp_file"
         cat "$tmp_file" > "$HOME/.bash_aliases"
@@ -61,7 +61,6 @@ fi
 
 # If force is false, leave a lightweight 'b back' shortcut function in shell config files
 if [ "$FORCE" = "false" ]; then
-    local b_back_content
     b_back_content=$(cat << 'EOF'
 b() {
     if [ "${1:-}" = "back" ]; then
@@ -78,6 +77,9 @@ EOF
 fi
 
 # Remove the installation directory
+rm -rf "$BOOTSTRAP_DATA_DIR"
+rm -rf "$BOOTSTRAP_STATE_DIR"
+rm -rf "$BOOTSTRAP_CACHE_DIR"
 rm -rf "${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
 
 if [ "$FORCE" = "true" ]; then

@@ -2,15 +2,10 @@
 # Tool: node
 # DisplayName: Node
 # Description: Install Node.js (LTS) and NVM
+# Strategy: managed
 #
 # Node.js and NVM Installer Script
 #
-
-# Prevent standalone execution
-if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
-    echo "Error: This script must be run through the 'b' CLI." >&2
-    exit 1
-fi
 
 set -euo pipefail
 
@@ -21,7 +16,7 @@ cleanup() {
 trap cleanup EXIT
 
 install_nvm() {
-    if has_command nvm || [ -s "$HOME/.nvm/nvm.sh" ]; then
+    if has_command nvm || [ -s "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh" ]; then
         log_info "NVM is already installed."
     fi
 
@@ -29,12 +24,13 @@ install_nvm() {
     if ! has_command tar; then
         log_info "tar not found. Installing tar..."
         pkg_install tar
+        registry_add_sys_deps "node" "tar"
     fi
 
     # Try to fetch the latest version of NVM from GitHub API
     log_info "Fetching the latest NVM version..."
     local latest_tag=""
-        latest_tag=$(curl -sL https://api.github.com/repos/nvm-sh/nvm/releases/latest | grep '"tag_name":' | head -n1 | sed -E 's/.*"tag_name": "([^"]+)".*/\1/' || true)
+    latest_tag=$(github_get_latest_release "nvm-sh/nvm")
 
     if [ -z "$latest_tag" ]; then
         latest_tag="v0.40.5" # Fallback version if API request fails
@@ -47,25 +43,20 @@ install_nvm() {
     log_info "Downloading NVM from $nvm_url..."
     download_file "$nvm_url" "$TMP_DIR/nvm.tar.gz"
 
-    log_info "Extracting NVM archive directly to $HOME/.nvm (stripping versioned subfolder to keep config generic)..."
-    mkdir -p "$HOME/.nvm"
-    tar -xzf "$TMP_DIR/nvm.tar.gz" -C "$HOME/.nvm" --strip-components=1
+    log_info "Extracting NVM archive directly to $BOOTSTRAP_RUNTIMES/nvm (stripping versioned subfolder to keep config generic)..."
+    mkdir -p "$BOOTSTRAP_RUNTIMES/nvm"
+    tar -xzf "$TMP_DIR/nvm.tar.gz" -C "$BOOTSTRAP_RUNTIMES/nvm" --strip-components=1
     
-    track_dir "$HOME/.nvm"
+    track_dir "$BOOTSTRAP_RUNTIMES/nvm"
 
-    log_success "NVM source files successfully extracted to $HOME/.nvm."
+    log_success "NVM source files successfully extracted to $BOOTSTRAP_RUNTIMES/nvm."
 }
 
 configure_shell() {
-    # Clean up legacy in-place configuration blocks
-    IFS=' ' read -ra target_files <<< "$(get_shell_configs)"
-    for config_file in "${target_files[@]}"; do
-        remove_block "$config_file" "nvm setup"
-    done
 
     local content
     content=$(cat << 'EOF'
-export NVM_DIR="$HOME/.nvm"
+export NVM_DIR="$BOOTSTRAP_RUNTIMES/nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # Load NVM
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # Load NVM bash completion
 EOF
@@ -76,10 +67,11 @@ EOF
 
 install_node() {
     # Ensure NVM is loaded in this script context
-    if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    if [ -s "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh" ]; then
         # Temporarily disable nounset as nvm.sh does not support set -u
         set +u
-        . "$HOME/.nvm/nvm.sh"
+        # shellcheck source=/dev/null
+        . "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh"
     else
         log_error "Could not load NVM to install Node.js."
         return 1
@@ -95,6 +87,7 @@ install_node() {
     nvm alias default 'lts/*'
     log_success "Node.js installed successfully!"
     set -u
+    register_tool "node" "managed" "$latest_tag" "github:nvm-sh/nvm"
 }
 
 main() {
@@ -106,7 +99,7 @@ main() {
     if has_command node; then
         log_success "Node.js (via NVM) installation and configuration complete."
         log_info "Installed Node version: $(node --version)"
-        log_info "Installed NVM version: $(nvm --version 2>/dev/null || cat "$HOME/.nvm/package.json" | grep '"version":' | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
+        log_info "Installed NVM version: $(nvm --version 2>/dev/null || grep '"version":' "$BOOTSTRAP_RUNTIMES/nvm/package.json" | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
     else
         log_success "Installation complete."
     fi

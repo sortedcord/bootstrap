@@ -8,11 +8,11 @@ _LIB_ROLLBACK_SOURCED=1
 BOOTSTRAP_STATE_DIR="$HOME/.local/state/bootstrap"
 BOOTSTRAP_HISTORY_LOG="$BOOTSTRAP_STATE_DIR/history.log"
 BOOTSTRAP_UNINSTALLERS_DIR="$BOOTSTRAP_STATE_DIR/uninstallers"
-BOOTSTRAP_PACKAGES_DIR="$BOOTSTRAP_STATE_DIR/packages"
+
 
 init_rollback_system() {
     mkdir -p "$BOOTSTRAP_UNINSTALLERS_DIR"
-    mkdir -p "$BOOTSTRAP_PACKAGES_DIR"
+
     touch "$BOOTSTRAP_HISTORY_LOG"
 }
 
@@ -51,6 +51,13 @@ track_dir() {
 
 create_savepoint() {
     local name="$1"
+    
+    # Prevent savepoints from having the same name as a tool
+    if [ -n "${INSTALLERS[$name]:-}" ]; then
+        log_error "Cannot create savepoint named '$name' because it conflicts with a tool name."
+        return 1
+    fi
+
     echo "SAVEPOINT: $name" >> "$BOOTSTRAP_HISTORY_LOG"
     log_success "Savepoint '$name' created."
 }
@@ -84,6 +91,41 @@ execute_rollback() {
     log_success "Rollback of '$tool' complete."
 }
 
+
+uninstall_tool() {
+    local tool="$1"
+    
+    # 1. Execute the rollback manifest to remove files/dirs/env/aliases
+    execute_rollback "$tool"
+
+    # 2. Reference counting and cleanup of system dependencies
+    local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
+    if [ -f "$registry_file" ] && jq -e --arg tool "$tool" '.tools | has($tool)' "$registry_file" >/dev/null; then
+        while IFS= read -r dep; do
+            [ -z "$dep" ] && continue
+            local other_users
+            other_users=$(jq -r --arg tool "$tool" --arg dep "$dep" '
+                .tools | to_entries | map(select(.key != $tool and (.value.system_dependencies | type == "array") and (.value.system_dependencies | index($dep)))) | length
+            ' "$registry_file")
+            
+            if [ "$other_users" -eq 0 ]; then
+                log_info "System dependency '$dep' is no longer required by any registered tool. Removing..."
+                pkg_remove "$dep"
+            else
+                log_info "Keeping system dependency '$dep' (required by other tools)"
+            fi
+        done < <(registry_get_sys_deps "$tool")
+        
+        # Remove from registry
+        registry_remove_tool "$tool"
+    fi
+    
+    # 3. Remove the tool from history.log
+    if [ -f "$BOOTSTRAP_HISTORY_LOG" ]; then
+        sed -i "/^INSTALL: ${tool}$/d" "$BOOTSTRAP_HISTORY_LOG"
+    fi
+}
+
 rollback_bare() {
     if [ ! -s "$BOOTSTRAP_HISTORY_LOG" ]; then
         log_info "No history available to rollback."
@@ -95,9 +137,7 @@ rollback_bare() {
     
     if [[ "$last_line" == INSTALL:* ]]; then
         local tool="${last_line#INSTALL: }"
-        execute_rollback "$tool"
-        # Remove the last line efficiently
-        sed -i '$ d' "$BOOTSTRAP_HISTORY_LOG"
+        uninstall_tool "$tool"
     elif [[ "$last_line" == SAVEPOINT:* ]]; then
         local sp="${last_line#SAVEPOINT: }"
         log_warn "Last action was savepoint '$sp'. Cannot bare-rollback a savepoint."
@@ -122,8 +162,7 @@ rollback_to_savepoint() {
             break
         elif [[ "$last_line" == INSTALL:* ]]; then
             local tool="${last_line#INSTALL: }"
-            execute_rollback "$tool"
-            sed -i '$ d' "$BOOTSTRAP_HISTORY_LOG"
+            uninstall_tool "$tool"
         elif [[ "$last_line" == SAVEPOINT:* ]]; then
             local sp="${last_line#SAVEPOINT: }"
             log_info "Removing intermediate savepoint '$sp'..."
@@ -135,4 +174,4 @@ rollback_to_savepoint() {
     done
 }
 
-export -f init_rollback_system setup_uninstaller_context add_rollback_cmd track_file track_dir create_savepoint mark_install_success execute_rollback rollback_bare rollback_to_savepoint
+export -f init_rollback_system setup_uninstaller_context add_rollback_cmd track_file track_dir create_savepoint mark_install_success execute_rollback uninstall_tool rollback_bare rollback_to_savepoint

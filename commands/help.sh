@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Command: help
 # Lists all available bootstrap commands and installers
 

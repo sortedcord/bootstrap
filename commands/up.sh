@@ -1,9 +1,11 @@
+# shellcheck shell=bash
 # Command: up
 # Manually checks for updates and runs the updater if a newer version is found.
 
 # Source libraries if needed
 if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
     _LIB_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/lib"
+    # shellcheck source=/dev/null
     . "$_LIB_DIR/common.sh"
 fi
 
@@ -14,7 +16,7 @@ log_info "Checking for updates..."
 local_ver="0.0.0"
 version_file="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}/VERSION"
 if [ -f "$version_file" ]; then
-    local_ver=$(cat "$version_file" | tr -d '[:space:]')
+    local_ver=$(tr -d '[:space:]' < "$version_file")
 fi
 
 base_url="https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master"

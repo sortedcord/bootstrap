@@ -11,6 +11,7 @@ if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
     # Assumes common.sh is in the same directory as platform.sh
     # We resolve the directory of the current script
     _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=/dev/null
     . "$_LIB_DIR/common.sh"
 fi
 
@@ -86,18 +87,7 @@ pkg_install() {
         if ! pkg_check "$pkg"; then
             to_install+=("$pkg")
         fi
-        
-        # Reference counting logic
-        if [ -n "${BOOTSTRAP_CURRENT_TOOL:-}" ] && [ -n "${BOOTSTRAP_PACKAGES_DIR:-}" ]; then
-            local ref_file="$BOOTSTRAP_PACKAGES_DIR/$pkg"
-            if ! grep -q "^${BOOTSTRAP_CURRENT_TOOL}$" "$ref_file" 2>/dev/null; then
-                echo "$BOOTSTRAP_CURRENT_TOOL" >> "$ref_file"
-                # Register rollback command
-                if type add_rollback_cmd >/dev/null 2>&1; then
-                    add_rollback_cmd "pkg_remove $pkg"
-                fi
-            fi
-        fi
+
     done
 
     if [ ${#to_install[@]} -eq 0 ]; then
@@ -169,21 +159,15 @@ pkg_remove() {
 
     local to_remove=()
     for pkg in "${pkgs[@]}"; do
-        if [ -n "${BOOTSTRAP_CURRENT_TOOL:-}" ] && [ -n "${BOOTSTRAP_PACKAGES_DIR:-}" ]; then
-            local ref_file="$BOOTSTRAP_PACKAGES_DIR/$pkg"
-            if [ -f "$ref_file" ]; then
-                # Remove this tool from the reference file
-                sed -i "/^${BOOTSTRAP_CURRENT_TOOL}$/d" "$ref_file"
-                if [ -s "$ref_file" ]; then
-                    log_info "Skipping removal of '$pkg'; it is required by other tools."
-                    continue
-                else
-                    rm -f "$ref_file"
-                fi
-            fi
+        local is_installed=0
+        if pkg_check "$pkg"; then
+            is_installed=1
         fi
+
         
-        to_remove+=("$pkg")
+        if [ "$is_installed" -eq 1 ]; then
+            to_remove+=("$pkg")
+        fi
     done
 
     if [ ${#to_remove[@]} -eq 0 ]; then
