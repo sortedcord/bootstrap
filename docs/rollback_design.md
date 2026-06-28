@@ -52,7 +52,7 @@ If the argument does not match an installed tool in the registry, it is treated 
 ## 4. Required Abstractions & Helper Modifications
 
 ### A. Context Initialization
-Before executing an installer script, the `b` CLI initializes the command list:
+Before executing a tool script, the `b` CLI initializes the command list:
 ```bash
 export BOOTSTRAP_UNINSTALLER_CMDS="$HOME/.local/state/bootstrap/uninstallers/nvim.cmds"
 mkdir -p "$(dirname "$BOOTSTRAP_UNINSTALLER_CMDS")"
@@ -97,7 +97,7 @@ log_success "Rollback complete."
 ```
 
 ## 6. Resilience Against User Modifications
-Because `b ware <tool>` allows users to modify installation scripts:
+Because `b ware <tool>` allows users to modify tool scripts:
 1. **Dynamic Adaptation:** The manifest is built *during* execution, adapting to whatever packages the user manually added.
 2. **Fault Isolation:** The `eval` loop ensures that a syntax error in one custom rollback step doesn't crash the removal of other tracked packages.
 
@@ -113,7 +113,7 @@ When a tool is uninstalled:
 To handle failures during installation (e.g., network drops, script errors, or user cancellation via `Ctrl+C`), the CLI incorporates a transactional approach that balances **automatic rollback** and **resumability**:
 
 ### A. The Interruption Trap & Prompt
-When running an installer, the central router (`lib/routes.sh`) traps `SIGINT` and `SIGTERM` signals. If the installation fails or is interrupted:
+When running a tool, the central router (`lib/routes.sh`) traps `SIGINT` and `SIGTERM` signals. If the installation fails or is interrupted:
 1. The trap catches the event and stops execution.
 2. The user is prompted interactively:
    - **Rollback (r)**: Invokes `execute_rollback <tool>` immediately to clean up all partial modifications.
@@ -130,6 +130,6 @@ If the user chooses to **keep** the partial state and runs `b <tool>` again:
 To make rerunning an interrupted script fast and efficient, installers use `download_file <url> <dest>` instead of raw `curl`:
 1. It downloads the payload to a central cache directory: `~/.local/state/bootstrap/cache/`.
 2. It uses `curl -C -` to continue the download from the byte offset where it was interrupted.
-3. Once completed, it copies the cached file to the installer's temp directory.
+3. Once completed, it copies the cached file to the tool's temp directory.
 4. Distro package manager commands (`pkg_install`) and shell snippets (`write_env_snippet`) are naturally idempotent, allowing the script to breeze through already completed steps in milliseconds and resume exactly where the heavy work failed.
 

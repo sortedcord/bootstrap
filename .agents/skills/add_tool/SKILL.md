@@ -1,11 +1,11 @@
 ---
-name: add_installer
-description: Add a new installer script to the bootstrap CLI project. Use this skill whenever the user asks to create a new installer, add a new tool/package to bootstrap, or register a new `b <name>` command.
+name: add_tool
+description: Add a new tool definition script to the bootstrap CLI project. Use this skill whenever the user asks to create a new tool, add a new tool/package to bootstrap, or register a new `b <name>` command.
 ---
 
-# Add a New Installer to Bootstrap CLI
+# Add a New Tool to Bootstrap CLI
 
-This skill provides everything needed to add a new installer to the bootstrap project without reading the entire codebase.
+This skill provides everything needed to add a new tool to the bootstrap project without reading the entire codebase.
 
 ## Project Overview
 
@@ -15,15 +15,15 @@ Bootstrap CLI (`b`) is a bash-based tool installer and system bootstrapper. User
 
 ```
 bootstrap/
-├── installers/          # Individual installer scripts (install_<name>.sh)
-├── lib/                 # Shared libraries and router sourced by all installers
+├── tools/               # Individual tool directories (tools/<name>/tool.sh)
+├── lib/                 # Shared libraries and router sourced by all tools
 │   ├── common.sh        # Logging, confirm(), has_command(), make_temp_dir()
 │   ├── platform.sh      # detect_distro(), detect_arch(), pkg_install(), pkg_check(), pkg_remove()
 │   ├── rollback.sh      # Rollback tracking (track_file, track_dir, add_rollback_cmd)
 │   ├── shell_config.sh  # write_env_snippet, write_alias_snippet, write_completion_snippet
-│   ├── registry.sh      # Dynamically generated installer registry
+│   ├── registry.sh      # Dynamically generated tool registry
 │   └── routes.sh        # Central router script
-├── commands/            # Non-installer commands (help, con, uninstall)
+├── commands/            # Non-tool commands (help, con, uninstall)
 ├── assets/              # Assets (logo art, etc.)
 │   └── pixel_art.ansi
 ├── bootstrap.sh         # Metascript for environment setup + library loading
@@ -33,12 +33,12 @@ bootstrap/
 
 ## Step-by-Step Checklist
 
-When adding a new installer named `<name>`:
+When adding a new tool named `<name>`:
 
 ### Step 1: Analyze user request & gather details
 
-When the user asks you to create an installer, they often provide either an official `curl` install script or a link to a `.tar.gz` release.
-You MUST do the following before writing the script:
+When the user asks you to add a tool, they often provide either an official `curl` install script or a link to a `.tar.gz` release.
+You MUST do the following before writing the tool script:
 
 If the user provides an official install or curl script in the prompt, or a link to one:
 - Execute the `curl` command (or use `read_url_content` or `read_browser_page`) to fetch the script and analyze what it actually does under the hood.
@@ -51,13 +51,15 @@ If the user provides an official install or curl script in the prompt, or a link
 **If the user provides a link to a `.tar.gz` (or `.zip`):**
 - First, download the archive to a temporary directory and extract it to inspect its contents.
 - Analyze the extracted folder structure to decide what needs to be installed (e.g., binaries, man pages, completions) and what should be ignored/deleted.
-- Write the `install_<name>` function to download, extract, and copy only those essential files. (Use `download_file` and temporary directories, see "Resumable Download and Extraction" below).
+- Write the `install_<name>` function to download, extract, and copy only those essential files. (Use `download_file` and temporary directories, see "GitHub Download and Extraction" below).
 
-### Step 2: Create the installer script
+### Step 2: Create the tool script
 
-### Step 3: Add metadata comments to the top of your installer script
+Create `tools/<name>/tool.sh` using the template below.
 
-At the top of your new installer script, right below `#!/usr/bin/env bash`, add the following metadata headers:
+### Step 3: Add metadata comments to the top of your tool script
+
+At the top of your new tool script, right below `#!/usr/bin/env bash`, add the following metadata headers:
 ```bash
 # Tool: <name>
 # DisplayName: <displayName>
@@ -65,7 +67,7 @@ At the top of your new installer script, right below `#!/usr/bin/env bash`, add 
 # Strategy: <strategy> (binary | managed | system)
 ```
 
-The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `install_*.sh` scripts to register the installer and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
+The central router `lib/routes.sh` and autocomplete function in `b.sh` will dynamically parse this metadata from all `tools/*/tool.sh` scripts to register the tool and keys automatically! No manual edits to `lib/routes.sh` or `b.sh` are required.
 
 ### Step 4: Implement Rollback Tracking (Crucial)
 
@@ -78,16 +80,16 @@ To ensure the user can seamlessly use `b rb <name>` to uninstall or rollback a t
 
 ### Step 5: Verify (optional)
 
-Verify that the installer works and appears in the help output:
+Verify that the tool works and appears in the help output:
 - Run `b all` to confirm it appears in the help list.
 - Run `b ware <name> -y` to test direct installation.
 - Run `b ware <name>` to test the interactive editing flow.
 
 ---
 
-## Installer Script Template
+## Tool Script Template
 
-Every installer follows this exact structure. Copy this and fill in the tool-specific logic (notice there are no standalone execution guards or curl checks):
+Every tool follows this exact structure. Copy this and fill in the tool-specific logic (notice there are no standalone execution guards or curl checks):
 
 ```bash
 #!/usr/bin/env bash
@@ -152,7 +154,7 @@ main "$@"
 
 ## Available Library Functions
 
-These are pre-loaded by `bootstrap.sh` — no need to source them manually in installers.
+These are pre-loaded by `bootstrap.sh` — no need to source them manually in tool scripts.
 
 ### From `lib/common.sh`
 
@@ -248,7 +250,7 @@ track_file "$BOOTSTRAP_BIN/binary"
 
 ## Rules & Conventions
 
-1. **File naming**: Always `install_<name>.sh` in the `installers/` directory.
+1. **File naming**: Always `tools/<name>/tool.sh`.
 2. **Confirmation prompts**: Always ask before installing. Check if already installed first.
 3. **Rollback Tracking**: NEVER omit rollback hooks. If you move a file to `$BOOTSTRAP_BIN`, you MUST call `track_file`. If you build/install manually (e.g. via `makepkg -si`), you MUST call `add_rollback_cmd "sudo pacman -R --noconfirm <pkg>"` or equivalent.
 4. **Shell Drop-ins**: Always use `write_env_snippet`, `write_alias_snippet`, or `write_completion_snippet` instead of manually injecting code directly into `~/.bashrc`.

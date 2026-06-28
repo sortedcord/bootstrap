@@ -120,10 +120,10 @@ EOF
             fi
         done
         
-        # Also copy installers if they exist locally
-        if [ -d "$_SCRIPT_DIR/installers" ]; then
-            mkdir -p "$routes_dir/installers"
-            cp -r "$_SCRIPT_DIR/installers/"* "$routes_dir/installers/"
+        # Also copy tools if they exist locally
+        if [ -d "$_SCRIPT_DIR/tools" ]; then
+            mkdir -p "$routes_dir/tools"
+            cp -r "$_SCRIPT_DIR/tools/"* "$routes_dir/tools/"
         fi
 
         # Also copy plugins if they exist locally

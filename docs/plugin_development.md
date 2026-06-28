@@ -1,6 +1,6 @@
 # Plugin Development Guide
 
-Plugins are first-party or third-party applications written to work directly with `bootstrap`. Unlike installers (or packages) which modify your system by compiling code, downloading binaries, and altering shell configuration files, **plugins are lazy-loaded scripts that execute within a sandboxed subshell**.
+Plugins are first-party or third-party applications written to work directly with `bootstrap`. Unlike tools (or packages) which modify your system by compiling code, downloading binaries, and altering shell configuration files, **plugins are lazy-loaded scripts that execute within a sandboxed subshell**.
 
 This means downloading and invoking a plugin makes no system modifications other than caching the `.sh` file itself. They are fetched only the very first time you invoke them.
 

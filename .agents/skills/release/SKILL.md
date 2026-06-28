@@ -20,11 +20,11 @@ When the user asks to "cut a release", "bump the version", or "tag a new version
    git log $(git describe --tags --abbrev=0)..HEAD --oneline
    ```
 2. **Determine the bump level** using semantic versioning rules:
-   - Skip any commits that only touch `installers/` or docs — those don't warrant a bump.
+   - Skip any commits that only touch `tools/` or docs — those don't warrant a bump.
    - If any commit has `BREAKING CHANGE` or `!:` → **major**
    - If any core-CLI commit has `feat:` → **minor**
    - Otherwise (only `fix:`, `refactor:`, etc. in core-CLI) → **patch**
-   - If *all* commits are installer-only or docs-only → inform the user no release is needed.
+   - If *all* commits are tool-only or docs-only → inform the user no release is needed.
 3. **Formulate a verbose, structured description of the changes** based on the analyzed commits. Group the changes into logical sections (such as "Breaking Changes & Major Features:" and "Other Updates:") and list the corresponding commit messages or summaries. Example format:
    ```text
    Breaking Changes & Major Features:
