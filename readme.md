@@ -32,7 +32,7 @@ More scripts will be added over time.
 To bootstrap a new machine and set up the `b` command tool, run the following:
 
 ```bash
-curl -fsSL https://adityagupta.dev/b | bash
+curl -fsSL https://b.adityagupta.dev | bash
 ```
 
 Once bootstrapped, you list all commands available -
