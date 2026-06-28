@@ -3,8 +3,10 @@
 ## 1. Objective
 Provide a robust rollback mechanism by dynamically generating an uninstallation command list during the installation process. This avoids external parsers, keeps dependencies low, and leverages native Bash execution. It also includes a stateful savepoint system to revert complex environments.
 
-## 2. Core Concept: Dynamic Command Manifests
-Instead of tracking state in data files (like JSON), the system procedurally builds a **Command Manifest** (`~/.local/state/bootstrap/uninstallers/<tool>.cmds`) as the installation progresses. Every helper action records its inverse command as an independent line in this manifest.
+## 2. Core Concept: Procedural Manifests & JSON Registry
+The system uses a hybrid approach:
+1. **Procedural Command Manifests**: As the installation progresses, a LIFO script manifest (`$BOOTSTRAP_STATE_DIR/uninstallers/<tool>.cmds`) is built by prepending the inverse commands for each helper action (files, directories, env/alias snippets).
+2. **Centralized JSON Registry**: Metadata, strategy, and system-level dependencies are tracked in a thread-safe `$BOOTSTRAP_STATE_DIR/registry.json` using `jq`. During uninstallation, this registry is used to reference-count and safely remove shared system dependencies.
 
 ## 3. History & Savepoints (`b fall` and `b rb`)
 To allow rolling back multiple installations or returning to a known good state, the system maintains a chronological **History Log** acting as a stack.
@@ -33,17 +35,19 @@ INSTALL: nvim
 ```
 
 ### C. Bare Rollback (`b rb`)
-When `b rb` is executed without arguments, it rolls back the single most recent change:
+When `b rb` is executed without arguments, it rolls back the single most recent installation:
 1. Reads the last line of the history log (e.g., `INSTALL: nvim`).
-2. Executes the command manifest for `nvim`.
-3. Deletes the last line from the history log.
+2. Runs `uninstall_tool nvim` which executes `nvim.cmds` and cleans up registry entries.
 
-### D. Savepoint Rollback (`b rb <name>`)
-When `b rb init` is executed, it rolls back all changes made after that savepoint:
+### D. Named Rollback (`b rb <tool1>,<tool2>...`)
+Users can uninstall specific tools by name (e.g., `b rb nvim` or `b rb nvim,yazi`). The system runs the corresponding uninstaller manifests, reference-counts and removes any orphaned system dependencies, and cleans up the history log and registry.
+
+### E. Savepoint Rollback (`b rb <savepoint>`)
+If the argument does not match an installed tool in the registry, it is treated as a savepoint:
 1. Parses the history log from bottom to top.
-2. For each `INSTALL: <tool>` encountered, it executes the rollback manifest for `<tool>`.
-3. Stops when it reaches `SAVEPOINT: init`.
-4. Truncates the history log back to the savepoint.
+2. For each `INSTALL: <tool>` encountered, it runs `uninstall_tool <tool>`.
+3. Stops when it reaches the specified `SAVEPOINT: <name>`.
+4. Truncates the history log back to that savepoint.
 
 ## 4. Required Abstractions & Helper Modifications
 
@@ -64,22 +68,18 @@ add_rollback_cmd() {
 }
 ```
 
-### C. Modifying Existing Helpers
-Existing helpers automatically generate their own inverse commands.
-- **`pkg_install`:** 
+### C. Helper Operations
+Helper functions record their inverse actions directly to the manifest:
+- **`write_env_snippet` / `write_alias_snippet` / `write_completion_snippet`:**
   ```bash
-  add_rollback_cmd "pkg_remove $pkg"
+  add_rollback_cmd "rm -f \"\$BOOTSTRAP_DIR/env.d/\$snippet_name.sh\""
   ```
-- **`write_env_snippet` / `write_alias_snippet`:**
+- **`track_file` / `track_dir`**:
   ```bash
-  add_rollback_cmd "rm -f \"$HOME/.config/bootstrap/env.d/$snippet_name.sh\""
+  track_file() { add_rollback_cmd "sudo rm -f '$1'"; }
+  track_dir() { add_rollback_cmd "sudo rm -rf '$1'"; }
   ```
-
-### D. New File Tracking Helpers
-```bash
-track_file() { add_rollback_cmd "sudo rm -f '$1'"; }
-track_dir() { add_rollback_cmd "sudo rm -rf '$1'"; }
-```
+Note: distro packages are not tracked via `add_rollback_cmd`. Instead, installers declare them as system dependencies (see below).
 
 ## 5. The Rollback Execution (`b rollback <tool>`)
 Execution is line-by-line and fault-tolerant, allowing safe recovery even if a user injects a malformed command.
@@ -102,9 +102,11 @@ Because `b ware <tool>` allows users to modify installation scripts:
 2. **Fault Isolation:** The `eval` loop ensures that a syntax error in one custom rollback step doesn't crash the removal of other tracked packages.
 
 ## 7. Handling Shared Dependencies
-The `pkg_remove` helper utilizes reference counting via simple text files (e.g., `~/.local/state/bootstrap/packages/curl`). 
-- **On `pkg_install`**: Append tool name.
-- **On `pkg_remove`**: Remove tool name. If empty, proceed with system uninstallation.
+System dependencies installed via `pkg_install` must be registered via `registry_add_sys_deps <tool> <dep1> <dep2>...`.
+When a tool is uninstalled:
+1. The registry is checked to see if any other installed tool still lists those dependencies.
+2. If the reference count drops to `0`, the dependency is automatically removed using `pkg_remove`.
+3. If other tools still depend on it, it is kept.
 
 ## 8. Fault Tolerance, Resumability, and Interrupted Installations
 

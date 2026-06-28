@@ -79,7 +79,7 @@ It automatically fuzzy-finds the folder in case there is no exact match. Also, i
 
 ### Rollbacks and Savepoints (`b rb` and `b fall`)
 
-Bootstrap CLI features a powerful, procedural rollback system. It strictly tracks every extracted binary, configuration snippet, and package manager transaction to ensure your environment stays clean.
+Bootstrap CLI features a robust rollback and uninstallation system driven by procedural manifests and a centralized JSON registry.
 
 To safely uninstall the very last tool you installed (including wiping its shell paths and aliases):
 
@@ -87,11 +87,21 @@ To safely uninstall the very last tool you installed (including wiping its shell
 b rb
 ```
 
+To uninstall specific tools by name (supporting single or comma-separated lists of tools):
+
+```bash
+b rb nvim
+b rb bat,yazi,zoxide
+```
+
+Shared system package dependencies are reference-counted in the registry and will be automatically cleaned up only when the last tool depending on them is removed.
+
 To create a named savepoint before experimenting with your setup:
 
 ```bash
 b fall pre_dev_setup
 ```
+*(Note: Savepoint names cannot conflict with the names of any available tools).*
 
 To completely roll back all installations made after that savepoint, restoring your system back to that exact state:
 
@@ -176,6 +186,20 @@ b gone -f
 ```
 
 Then reload your shell configuration or run `unset -f b` to clear the function definition from your current terminal session.
+
+## Directory Layout
+
+Bootstrap isolates all of its components and installed software inside XDG-compliant directories. You can override these variables in your shell environment, but they default to the following:
+
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `BOOTSTRAP_DIR` | `~/.config/bootstrap` | Core configuration, libraries, shell snippets (`env.d`, `aliases.d`, `completions.d`), and local installers |
+| `BOOTSTRAP_DATA_DIR` | `~/.local/share/bootstrap` | Active installation bin files, optional components, and runtime installations |
+| `BOOTSTRAP_STATE_DIR` | `~/.local/state/bootstrap` | Stateful registry, logs, and rollback/uninstall manifests |
+| `BOOTSTRAP_CACHE_DIR` | `~/.cache/bootstrap` | Downloaded files cache and temporary workspace files |
+| `BOOTSTRAP_BIN` | `$BOOTSTRAP_DATA_DIR/bin` | Target directory for all installed tools' binaries |
+| `BOOTSTRAP_OPT` | `$BOOTSTRAP_DATA_DIR/opt` | Destination for complex, multi-file software distributions |
+| `BOOTSTRAP_RUNTIMES` | `$BOOTSTRAP_DATA_DIR/runtimes` | Workspace for programming language runtime managers (e.g. NVM) |
 
 ## Development
 
