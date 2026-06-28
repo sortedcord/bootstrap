@@ -19,6 +19,7 @@ install_fzf() {
 
     log_info "fzf not found. Installing fzf..."
     pkg_install fzf
+    registry_add_sys_deps "zoxide" "fzf"
 }
 
 install_zoxide() {

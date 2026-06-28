@@ -40,6 +40,17 @@ install_packages() {
         "debian:python3-venv" \
         "fedora:gcc-c++"
         
+    registry_add_sys_deps "nvim" \
+        git tar unzip ripgrep fzf nodejs npm xclip wl-clipboard \
+        "arch:fd|debian:fd-find|fedora:fd-find" \
+        "arch:cmake|debian:cmake|fedora:cmake" \
+        "arch:make|debian:build-essential|fedora:make" \
+        "arch:gcc|debian:build-essential|fedora:gcc" \
+        "arch:python|debian:python3|fedora:python3" \
+        "debian:python3-pip|fedora:python3-pip" \
+        "debian:python3-venv" \
+        "fedora:gcc-c++"
+        
     create_fd_symlink
 
     log_info "Installing tree-sitter-cli globally..."

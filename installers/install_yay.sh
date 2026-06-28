@@ -38,6 +38,7 @@ install_yay() {
     else
         log_info "Dependencies (git and base-devel) are already present. Skipping package installation."
     fi
+    registry_add_sys_deps "yay" "git" "base-devel"
 
     log_info "Cloning yay-bin repository..."
     local clone_dir

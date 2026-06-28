@@ -45,6 +45,7 @@ install_yazi() {
     if ! has_command unzip; then
         log_info "unzip not found. Installing unzip..."
         pkg_install unzip
+        registry_add_sys_deps "yazi" "unzip"
     fi
 
     local arch

@@ -24,8 +24,9 @@ install_docker() {
         fi
     fi
 
-    # Use pkg_install for distro packages (it automatically handles rollback hooks for the packages!)
+    # Use pkg_install for distro packages and explicitly register them for reference-counted rollback
     pkg_install "arch:docker|debian:docker.io|fedora:docker"
+    registry_add_sys_deps "docker" "arch:docker|debian:docker.io|fedora:docker"
 
     # Ensure docker group exists (some distros might not create it immediately)
     if ! getent group docker >/dev/null 2>&1; then

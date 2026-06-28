@@ -24,6 +24,7 @@ install_nvm() {
     if ! has_command tar; then
         log_info "tar not found. Installing tar..."
         pkg_install tar
+        registry_add_sys_deps "node" "tar"
     fi
 
     # Try to fetch the latest version of NVM from GitHub API
