@@ -119,29 +119,27 @@ b up
 b up --force
 ```
 
-### Client Authentication and Provisioning (`b me` and `b trust`)
+## Client Onboarding & Secrets Provisioning
 
-Bootstrap CLI supports a secure, cryptographic client onboarding and secrets provisioning flow. This allows you to securely register new requester devices and authorize them via an administrator device.
+Bootstrap CLI features a secure, cryptographic client onboarding and secrets provisioning flow. Driven by the lazy-loaded `auth` plugin, it allows you to register new requester devices and authorize them via a trusted administrator machine using SSH Ed25519 key signing and `age` encryption.
 
-For the complete protocol specification, including the underlying REST API and cryptographic details, see the [Client Authentication and Provisioning Specification](docs/client_spec_auth.md).
+The backend authentication and verification service is implemented in the [bootstrap-auth-server](https://github.com/sortedcord/bootstrap-auth-server) repository. For detailed client specifications, protocols, REST API endpoint specs, and cryptographic steps, refer to the [Client Onboarding & Secrets Provisioning Wiki](docs/client_spec_auth.md).
 
-#### 1. Device Registration (`b me`)
-To initiate registration on a new, unprovisioned machine, run:
+### 1. Device Registration (`b me`)
 
+To register a new, unprovisioned machine:
 ```bash
 b me [--server <server_url>] [--key-dir <dir>] [--poll-interval <seconds>]
 ```
+This generates a local SSH Ed25519 key pair, registers the device in a pending state, displays a short `user_code`, and polls the server. Once approved, it retrieves the secrets payload, decrypts it locally using `age`, and saves it to `<key-dir>/secrets.decrypted`.
 
-This generates a local SSH Ed25519 key pair, registers your device in a pending state with the authentication server, displays a short `user_code`, and starts polling for administrator approval. Once approved, the encrypted payload containing secrets is retrieved, decrypted locally via `age`, and saved to `<key-dir>/secrets.decrypted`.
+### 2. Request Approval (`b trust`)
 
-#### 2. Request Approval (`b trust`)
-To authorize a pending device, run this command on an already provisioned administrator machine:
-
+To authorize a pending client from an administrator device:
 ```bash
 b trust <user_code> [--server <server_url>] [--admin-key <path_to_admin_private_key>]
 ```
-
-This retrieves the pending device's public key, prompts the administrator for confirmation, cryptographically signs the public key using the admin key, and submits the approval signature back to the authentication server.
+This retrieves the client's public key, prompts the administrator for confirmation, signs the key using `ssh-keygen -Y sign` (under the `bootstrap` namespace), and submits the approval signature back to the server.
 
 ## Plugins (`b <plugin_name>`)
 
@@ -151,23 +149,12 @@ Downloading and invoking a plugin makes no system modifications other than cachi
 
 ### Official Plugins
 
-Bootstrap comes pre-configured with a set of official plugins ready to use out-of-the-box:
+* **`auth`**: Handles client onboarding and secrets provisioning, exposing the `b me` and `b trust` CLI commands. See the [Client Onboarding & Secrets Provisioning](#client-onboarding--secrets-provisioning) section for detailed usage.
 
-* **`weather`**: Fetches and displays a neat weather forecast using `wttr.in`.
-  ```bash
-  b weather
-  b weather New York
-  ```
-* **`sysinfo`**: Displays a system resource dashboard showing CPU, memory, disk usage, and OS/kernel details.
-  ```bash
-  b sysinfo
-  ```
-* **`todo`**: A command-line todo list manager. Tasks are persisted to a lightweight text file in your user directory.
-  ```bash
-  b todo add "Write a new plugin"
-  b todo list
-  b todo done 1
-  ```
+
+* **`weather`**: Fetches weather forecasts via `wttr.in` (Usage: `b weather [location]`).
+* **`sysinfo`**: Displays a system resource dashboard (Usage: `b sysinfo`).
+* **`todo`**: A command-line todo manager (Usage: `b todo <add "task"|list|done <id>>`).
 
 ### Adding Third-Party Plugins
 

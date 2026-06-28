@@ -1,162 +1,165 @@
-# Client Authentication and Provisioning Specification
+# Client Onboarding & Secrets Provisioning
 
-This document defines the interface and protocol flow for the client application interacting with the bootstrap authentication server. It serves as a guide for implementing any client, particularly the dual mode bash script client.
-
-## Core Concepts
-
-The bootstrapping process establishes trust between a new client device, an existing administrator device, and the authentication server. The authentication server uses Ed25519 public key cryptography for authentication and `age` for secure payload encryption.
-
-### Dual Mode Client
-
-The client application operates in one of two modes:
-1. **Requester Mode**: Used by a new, unprovisioned device to request access and receive secrets.
-2. **Approver Mode**: Used by an already provisioned administrator device to authorize pending requests.
+This wiki page describes the design, cryptography, and protocol flow of the **Bootstrap Client Onboarding and Secrets Provisioning System**. It explains how a new client device establishes secure trust with an authentication server through an existing administrator device.
 
 ---
 
-## The Authentication and Provisioning Flow
+## Overview & Architecture
 
-The complete flow consists of five sequential phases.
+The onboarding process leverages public-key cryptography to securely distribute configurations or secrets (encrypted using `age`) to newly registered nodes.
 
-### Phase 1: Administrator Bootstrapping
-1. The server starts up. If the `ADMIN_PUBLIC_KEY` environment variable is set, the server automatically registers and approves this public key as an administrator device in the database.
-2. The administrator client on the admin machine is configured to use the corresponding private key.
+The trust model consists of three entities:
+1. **Requester Node (New Client)**: An unprovisioned machine requesting configuration secrets. It generates a local Ed25519 key pair for identification.
+2. **Approver Node (Administrator)**: A trusted administrator machine that already possesses an approved Ed25519 private key.
+3. **Authentication Server**: The central coordinator that manages pending requests, validates administrator signatures, and serves `age`-encrypted payloads. The backend server codebase is hosted in the [bootstrap-auth-server](https://github.com/sortedcord/bootstrap-auth-server) repository.
 
-### Phase 2: Client Request Initiation (Requester Mode)
-1. The new device runs the client in requester mode:
-   ```bash
-    b me  (optional: --server <server_url>) [default auth server is https://b.adityagupta.dev/auth]
-   ```
-2. The client script generates an Ed25519 key pair locally.
-3. The client sends a `POST /api/register` request containing its generated public key.
-4. The server registers the device in a `pending` state and returns:
-   - A short, human readable `user_code` (e.g. 4 to 8 characters).
-   - A unique `device_id`.
-5. The client script displays the `user_code` to the operator and begins polling the challenge endpoint:
-   ```
-   GET /api/challenge/poll?device_id=<device_id>
-   ```
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin
+    participant Requester as Requester Client (b me)
+    participant Server as Auth Server
+    participant Approver as Approver Client (b trust)
 
-### Phase 3: Administrator Approval (Approver Mode)
-1. The operator reads the `user_code` from the requesting device's terminal.
-2. On the administrator device, the operator runs the client in approver mode:
-   ```bash
-   b trust <user_code> [--server <server_url>]
-   ```
-3. The administrator client queries the server to retrieve the pending registration details:
-   ```
-   GET /api/pending/<user_code>
-   ```
-4. The server returns the pending `device_id` and the requester's `public_key`.
-5. The administrator client displays these details. The operator confirms the request.
-6. The administrator client signs a payload containing the requester's `device_id` and the approval action using its Ed25519 administrator private key.
-7. The administrator client submits the signature and its public key to the server:
-   ```
-   POST /api/approve
-   ```
-8. The server verifies the administrator's signature against the registered administrator public keys. If valid, the server transitions the requester device state from `pending` to `approved`.
-
-### Phase 4: Payload Provisioning
-1. Once the requester device is approved, the server generates the secret payload (or retrieves it from a secure source).
-2. The server encrypts the payload using the requester's public key via `age`.
-3. The server stores this encrypted payload as a challenge response.
-
-### Phase 5: Challenge Completion and Retrieval
-1. The next poll from the requester client to `GET /api/challenge/poll?device_id=<device_id>` succeeds.
-2. The server returns the `age` encrypted payload.
-3. The requester client decrypts the payload using its local private key.
-4. The secrets are successfully provisioned.
+    Requester->>Server: POST /api/register (Host, OS, Public Key)
+    Server-->>Requester: 200 OK (user_code, challenge_nonce)
+    Note over Requester: Displays user_code & begins polling...
+    
+    Admin->>Approver: Exec: b trust <user_code>
+    Approver->>Server: GET /api/pending/<user_code>
+    Server-->>Approver: 200 OK (Requester Public Key)
+    
+    Note over Approver: Admin confirms public key fingerprint
+    Approver->>Server: POST /api/approve (user_code, Admin Signature & Fingerprint)
+    Note over Server: Server verifies signature against admin list
+    
+    Requester->>Server: POST /api/challenge/poll (user_code, Signature of Nonce)
+    Server-->>Requester: 200 OK (Encrypted Secrets Payload)
+    
+    Note over Requester: Decrypts payload using local Ed25519 private key
+```
 
 ---
 
-## API Endpoints Reference
+## Cryptographic Mechanics
 
-### 1. Register Device
-- **Endpoint**: `POST /api/register`
-- **Request Body**:
+To maintain security without complex dependencies, the system uses native Unix tools:
+
+* **Authentication (Ed25519)**: SSH Ed25519 key pairs generated by `ssh-keygen` are used for signing. Payloads are signed using `ssh-keygen -Y sign` with a fixed namespace of `bootstrap`.
+* **Encryption (`age`)**: Payloads are encrypted specifically to the requester's SSH Ed25519 public key. The client decrypts the payload using its private key:
+  ```bash
+  age -d -i ~/.config/bootstrap-client/id_ed25519
+  ```
+
+---
+
+## Step-by-Step Protocol Flow
+
+### Phase 1: Administrator Registration
+The server registers administrator public keys at startup (e.g., via the `ADMIN_PUBLIC_KEY` environment variable). The administrator client on the admin machine must be configured to use the corresponding private key.
+
+### Phase 2: Client Request (`b me`)
+1. The requester executes `b me`.
+2. It generates an Ed25519 key pair (`id_ed25519`/`id_ed25519.pub`) in `~/.config/bootstrap-client/`.
+3. It sends a registration request to the server containing its hostname, OS, and public key.
+4. The server registers the device as `pending`, generating a short, human-readable `user_code` and a `challenge_nonce`.
+5. The requester displays the `user_code` and begins polling `/api/challenge/poll`.
+
+### Phase 3: Administrator Approval (`b trust`)
+1. The operator reads the `user_code` from the requester's terminal and enters it on the administrator device: `b trust <user_code>`.
+2. The administrator client fetches the pending public key from `/api/pending/<user_code>`.
+3. The operator validates the public key fingerprint.
+4. The administrator client signs the requester's public key using `ssh-keygen -Y sign` and submits the signature along with its fingerprint to `/api/approve`.
+5. The server validates the signature. If valid, the client state transitions to `approved`.
+
+### Phase 4: Secrets Retrieval & Decryption
+1. During its next poll, the requester client signs the `challenge_nonce` and submits it to `/api/challenge/poll`.
+2. The server verifies the signature. Since the client is now approved, it returns the secrets payload (which was encrypted with the requester's public key using `age`).
+3. The requester client base64-decodes the payload, decrypts it using its local SSH private key, and saves it to `~/.config/bootstrap-client/secrets.decrypted`.
+
+---
+
+## API Reference
+
+### Register Device
+* **Endpoint**: `POST /api/register`
+* **Content-Type**: `application/json`
+* **Request**:
+  ```json
+  {
+    "hostname": "my-client-hostname",
+    "os": "Linux",
+    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
+  }
+  ```
+* **Response (200 OK)**:
+  ```json
+  {
+    "user_code": "G4J2N3",
+    "challenge_nonce": "a6f8b9...",
+    "expires_in": 300
+  }
+  ```
+
+### Get Pending Details
+* **Endpoint**: `GET /api/pending/<user_code>`
+* **Response (200 OK)**:
   ```json
   {
     "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
   }
   ```
-- **Response Body (200 OK)**:
-  ```json
-  {
-    "device_id": "uuid-string",
-    "user_code": "A3F9K2"
-  }
-  ```
 
-### 2. Get Pending Device Details
-- **Endpoint**: `GET /api/pending/<user_code>`
-- **Response Body (200 OK)**:
+### Approve Device
+* **Endpoint**: `POST /api/approve`
+* **Content-Type**: `application/json`
+* **Request**:
   ```json
   {
-    "device_id": "uuid-string",
-    "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5..."
+    "user_code": "G4J2N3",
+    "approver_public_key_fingerprint": "SHA256:...",
+    "signature": "base64-encoded-sshsig-blob"
   }
   ```
+  > [!NOTE]
+  > The `signature` is the base64-encoded binary content of the SSHSIG file (i.e. the raw base64 string inside the armor, excluding the `-----BEGIN/END SSH SIGNATURE-----` lines).
 
-### 3. Approve Device
-- **Endpoint**: `POST /api/approve`
-- **Request Body**:
+### Poll Challenge
+* **Endpoint**: `POST /api/challenge/poll`
+* **Content-Type**: `application/json`
+* **Request**:
   ```json
   {
-    "device_id": "uuid-string",
-    "admin_public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5...",
-    "signature": "hex-encoded-signature-bytes"
+    "user_code": "G4J2N3",
+    "signature": "base64-encoded-sshsig-blob-of-challenge-nonce"
   }
   ```
-- **Response Body (200 OK)**: Empty or success confirmation.
-
-### 4. Poll Challenge
-- **Endpoint**: `GET /api/challenge/poll?device_id=<device_id>`
-- **Response Body (200 OK - Pending)**:
+* **Response (200 OK)**:
   ```json
   {
-    "status": "pending"
-  }
-  ```
-- **Response Body (200 OK - Approved & Encrypted)**:
-  ```json
-  {
-    "status": "approved",
-    "payload": "-----BEGIN AGE ENCRYPTED FILE-----\n..."
+    "encrypted_secrets": "base64-encoded-age-encrypted-payload"
   }
   ```
 
 ---
 
-## Bash Client Commands and Usage
+## Client Usage Guide
 
+### Requirements
+Ensure `ssh-keygen`, `curl`, `jq`, and `age` are installed. (The Bootstrap `auth` plugin resolves these automatically on start).
 
-### Global Dependencies
-- `curl` or `wget` for making HTTP requests.
-- `jq` for parsing JSON payloads.
-- `ssh-keygen` for Ed25519 key generation and signing.
-- `age` and `age-keygen` for decrypting the final payload.
-
-### Command Structure
-
-#### 1. Device Registration Request
-Generates local keys, registers with the server, and polls for the encrypted secret payload.
+### 1. Requesting Access (`b me`)
+Run the following on the client machine to initiate registration:
 ```bash
-b me \
-  --server <server_url> \
-  [--key-dir <directory_to_save_keys>] \
-  [--poll-interval <seconds>]
+b me [--server <server_url>] [--key-dir <dir>] [--poll-interval <seconds>]
 ```
-- `--server`: Base URL of the bootstrap authentication server.
-- `--key-dir`: Directory where the new Ed25519 and age keys will be saved (defaults to `~/.config/bootstrap-client/`).
-- `--poll-interval`: Frequency of polling in seconds (defaults to `5`).
+* Default `--server`: `https://b.adityagupta.dev/auth`
+* Default `--key-dir`: `~/.config/bootstrap-client`
+* Default `--poll-interval`: `5`
 
-#### 2. Request Approval
-Retrieves a pending request by its user code, requests user confirmation, signs the approval payload, and sends it to the server.
+### 2. Approving Access (`b trust`)
+Run the following on the administrator machine to approve a pending request:
 ```bash
-b trust <user_code> \
-  --server <server_url> \
-  --admin-key <path_to_admin_private_key>
+b trust <user_code> [--server <server_url>] [--admin-key <path_to_admin_private_key>]
 ```
-- `--code`: The short human readable code displayed on the requesting device.
-- `--server`: Base URL of the bootstrap authentication server.
-- `--admin-key`: Path to the administrator's private key used to sign the approval.
+* Default `--admin-key`: `~/.ssh/id_ed25519`
