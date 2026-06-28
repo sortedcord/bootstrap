@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GitHub API helper functions for Bootstrap installers
+# GitHub API helper functions for Bootstrap tools
 
 # Usage: github_get_latest_release <owner/repo>
 # Prints the tag_name of the latest release.

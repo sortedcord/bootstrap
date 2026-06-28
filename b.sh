@@ -93,8 +93,8 @@ _b_completion() {
         
         local routes_dir="$HOME/.config/bootstrap"
         local installer_keys=""
-        if [ -d "$routes_dir/installers" ]; then
-            for f in "$routes_dir/installers"/install_*.sh; do
+        if [ -d "$routes_dir/tools" ]; then
+            for f in "$routes_dir/tools"/*/tool.sh; do
                 if [ -f "$f" ]; then
                     local tool
                     tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
@@ -135,8 +135,8 @@ _b_completion() {
     if [ "$COMP_CWORD" -eq 2 ] && { [ "$prev" = "ware" ] || [ "$prev" = "bware" ]; }; then
         local routes_dir="$HOME/.config/bootstrap"
         local installer_keys=""
-        if [ -d "$routes_dir/installers" ]; then
-            for f in "$routes_dir/installers"/install_*.sh; do
+        if [ -d "$routes_dir/tools" ]; then
+            for f in "$routes_dir/tools"/*/tool.sh; do
                 if [ -f "$f" ]; then
                     local tool
                     tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')

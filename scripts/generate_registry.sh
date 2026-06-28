@@ -5,7 +5,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-INSTALLERS_DIR="$REPO_DIR/installers"
+TOOLS_DIR="$REPO_DIR/tools"
 REGISTRY_FILE="$REPO_DIR/lib/registry.sh"
 
 echo "==> Generating registry.sh..."
@@ -16,7 +16,7 @@ declare -A tools_disp
 declare -A tools_strat
 keys=()
 
-for f in "$INSTALLERS_DIR"/install_*.sh; do
+for f in "$TOOLS_DIR"/*/tool.sh; do
     [ -f "$f" ] || continue
     tool=$(grep -E "^# Tool:" "$f" | head -n1 | sed -E 's/^# Tool:\s*//I')
     disp_name=$(grep -E "^# DisplayName:" "$f" | head -n1 | sed -E 's/^# DisplayName:\s*//I')

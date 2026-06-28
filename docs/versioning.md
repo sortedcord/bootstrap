@@ -6,7 +6,7 @@ The Bootstrap CLI uses a semantic, git-tag-driven versioning workflow.
 
 - **Do not manually edit the `VERSION` file.**
 - Develop normally using [Conventional Commits](https://www.conventionalcommits.org/) (e.g., `feat: Add new tool`, `fix: Typo in script`).
-- **Note on Installers:** Adding or modifying installers in the `installers/` directory **does not** require a version bump. They are fetched dynamically from the registry when a user runs `b ware <tool>`.
+- **Note on Tools:** Adding or modifying tools in the `tools/` directory **does not** require a version bump. They are fetched dynamically from the registry when a user runs `b ware <tool>`.
 
 ## 2. When to Cut a Release
 

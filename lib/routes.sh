@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Central routing script for bootstrap installers.
+# Central routing script for bootstrap tools.
 # This file is updated automatically by the 'b' command.
 
 _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
@@ -69,8 +69,8 @@ run_ware() {
         display_name="$(echo "${tool:0:1}" | tr '[:lower:]' '[:upper:]')${tool:1}"
     fi
     
-    # Check for local installer first
-    local local_installer="$BOOTSTRAP_DIR/installers/install_${tool}.sh"
+    # Check for local tool definition first
+    local local_installer="$BOOTSTRAP_DIR/tools/${tool}/tool.sh"
     
     if [ "$bypass_edit" = "true" ] && [ -f "$local_installer" ]; then
         log_info "Running ${display_name} installer..."
@@ -86,7 +86,7 @@ run_ware() {
     else
         BOOTSTRAP_BASE_URL="${BOOTSTRAP_BASE_URL:-https://git.adityagupta.dev/sortedcord/bootstrap/raw/branch/master}"
         BOOTSTRAP_FALLBACK_URL="${BOOTSTRAP_FALLBACK_URL:-https://raw.githubusercontent.com/sortedcord/bootstrap/refs/heads/master}"
-        local installer_path="installers/install_${tool}.sh"
+        local installer_path="tools/${tool}/tool.sh"
         local download_status=0
 
         log_info "Downloading ${display_name} installer..."
