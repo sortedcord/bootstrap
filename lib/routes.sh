@@ -275,11 +275,20 @@ for script in "${SCRIPTS[@]}"; do
                 if [ -z "$target" ]; then
                     rollback_bare
                 else
-                    local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
-                    if [ -f "$registry_file" ] && jq -e --arg t "$target" '.tools | has($t)' "$registry_file" >/dev/null; then
-                        uninstall_tool "$target"
+                    # Split comma-separated targets
+                    IFS=',' read -ra TARGETS <<< "$target"
+                    
+                    if [ ${#TARGETS[@]} -gt 1 ]; then
+                        for t in "${TARGETS[@]}"; do
+                            uninstall_tool "$t"
+                        done
                     else
-                        rollback_to_savepoint "$target"
+                        local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
+                        if [ -f "$registry_file" ] && jq -e --arg t "$target" '.tools | has($t)' "$registry_file" >/dev/null; then
+                            uninstall_tool "$target"
+                        else
+                            rollback_to_savepoint "$target"
+                        fi
                     fi
                 fi
                 exit 0
