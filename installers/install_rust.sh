@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tool: rust
 # DisplayName: Rust
 # Description: Install Rustup and Rust compiler/toolchain

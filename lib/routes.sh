@@ -262,7 +262,7 @@ for script in "${SCRIPTS[@]}"; do
                 fi
                 ;;
             fall)
-                local savepoint_name="${1:-}"
+                savepoint_name="${1:-}"
                 if [ -z "$savepoint_name" ]; then
                     log_error "Usage: b fall <savepoint_name>"
                     exit 1
@@ -271,7 +271,7 @@ for script in "${SCRIPTS[@]}"; do
                 exit 0
                 ;;
             rb)
-                local target="${1:-}"
+                target="${1:-}"
                 if [ -z "$target" ]; then
                     rollback_bare
                 else
@@ -283,7 +283,7 @@ for script in "${SCRIPTS[@]}"; do
                             uninstall_tool "$t"
                         done
                     else
-                        local registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
+                        registry_file="$BOOTSTRAP_STATE_DIR/registry.json"
                         if [ -f "$registry_file" ] && jq -e --arg t "$target" '.tools | has($t)' "$registry_file" >/dev/null; then
                             uninstall_tool "$target"
                         else

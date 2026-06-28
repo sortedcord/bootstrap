@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tool: nvim
 # DisplayName: Neovim
 # Description: Install Neovim 0.12.0 and configuration

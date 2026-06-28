@@ -20,7 +20,7 @@ fi
 
 # Locate or download libraries so that sourced installers can use them
 BOOTSTRAP_DIR="${BOOTSTRAP_DIR:-$HOME/.config/bootstrap}"
-_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null || pwd)"
+_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd 2>/dev/null)" || _SCRIPT_DIR="$(pwd)"
 
 if [ -f "$_SCRIPT_DIR/lib/common.sh" ]; then
     # Dev/local mode: source directly from repo
@@ -268,7 +268,7 @@ EOF
             # Display centered version of bootstrap in bold
             _version=""
             if [ -f "$_version_file" ]; then
-                _version=$(cat "$_version_file" | tr -d '\r\n')
+                _version=$(tr -d '\r\n' < "$_version_file")
             fi
             if [ -z "$_version" ]; then
                 _version="0.0.0" # Fallback if VERSION missing
@@ -335,6 +335,7 @@ EOF
 
     # Load the b function immediately in the current subshell
     if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        # shellcheck source=/dev/null
         . "$HOME/.config/bootstrap/b.sh"
     fi
 
@@ -347,6 +348,7 @@ else
     # Sourced mode (e.g., when sourced by installers or manually by user)
     # Load the b function in the current shell context
     if [ -f "$HOME/.config/bootstrap/b.sh" ]; then
+        # shellcheck source=/dev/null
         . "$HOME/.config/bootstrap/b.sh"
     fi
 fi

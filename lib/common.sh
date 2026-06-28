@@ -81,6 +81,7 @@ make_temp_dir() {
 version_lt() {
     [ "$1" = "$2" ] && return 1
     local IFS=.
+    # shellcheck disable=SC2206
     local i ver1=($1) ver2=($2)
     for ((i=${#ver1[@]}; i<3; i++)); do ver1[i]=0; done
     for ((i=${#ver2[@]}; i<3; i++)); do ver2[i]=0; done

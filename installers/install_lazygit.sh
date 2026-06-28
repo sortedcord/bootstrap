@@ -34,7 +34,8 @@ install_lazygit() {
 
     local version="${latest_tag#v}"
     
-    local arch=$(detect_arch)
+    local arch
+    arch=$(detect_arch)
     local arch_str="x86_64"
     if [ "$arch" = "arm64" ]; then
         arch_str="arm64"

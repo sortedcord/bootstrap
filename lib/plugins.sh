@@ -57,7 +57,7 @@ EOF
             
             for temp_file in "${temp_manifests[@]}"; do
                 if [ -s "$temp_file" ]; then
-                    cat "$temp_file" | parse_plugin_manifest >> "$cache_file"
+                    parse_plugin_manifest < "$temp_file" >> "$cache_file"
                 fi
                 rm -f "$temp_file"
             done
@@ -131,7 +131,7 @@ run_plugin() {
     if [ -n "$compat_ver" ]; then
         local current_ver="0.0.0"
         if [ -f "$BOOTSTRAP_DIR/VERSION" ]; then
-            current_ver=$(cat "$BOOTSTRAP_DIR/VERSION" | tr -d '[:space:]')
+            current_ver=$(tr -d '[:space:]' < "$BOOTSTRAP_DIR/VERSION")
         fi
         if version_lt "$compat_ver" "$current_ver"; then
             log_warn "Plugin '$plugin_name' is only tested up to bootstrap version $compat_ver (current: $current_ver). It may be incompatible."

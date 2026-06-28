@@ -11,6 +11,7 @@ if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
     # Assumes common.sh is in the same directory as platform.sh
     # We resolve the directory of the current script
     _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=/dev/null
     . "$_LIB_DIR/common.sh"
 fi
 

@@ -69,6 +69,7 @@ install_node() {
     if [ -s "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh" ]; then
         # Temporarily disable nounset as nvm.sh does not support set -u
         set +u
+        # shellcheck source=/dev/null
         . "$BOOTSTRAP_RUNTIMES/nvm/nvm.sh"
     else
         log_error "Could not load NVM to install Node.js."
@@ -97,7 +98,7 @@ main() {
     if has_command node; then
         log_success "Node.js (via NVM) installation and configuration complete."
         log_info "Installed Node version: $(node --version)"
-        log_info "Installed NVM version: $(nvm --version 2>/dev/null || cat "$BOOTSTRAP_RUNTIMES/nvm/package.json" | grep '"version":' | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
+        log_info "Installed NVM version: $(nvm --version 2>/dev/null || grep '"version":' "$BOOTSTRAP_RUNTIMES/nvm/package.json" | head -n1 | sed -E 's/.*"version": "([^"]+)".*/\1/' || echo "unknown")"
     else
         log_success "Installation complete."
     fi

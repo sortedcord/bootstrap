@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Command: con
 # Edits configurations in ~/.config/
 

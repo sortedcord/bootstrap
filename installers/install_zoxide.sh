@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2016
 # Tool: zoxide
 # DisplayName: Zoxide
 # Description: Install Zoxide directory jumper

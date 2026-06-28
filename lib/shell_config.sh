@@ -9,6 +9,7 @@ _LIB_SHELL_CONFIG_SOURCED=1
 # Source common utilities if not already loaded
 if [ -z "${_LIB_COMMON_SOURCED:-}" ]; then
     _LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # shellcheck source=/dev/null
     . "$_LIB_DIR/common.sh"
 fi
 
@@ -170,6 +171,7 @@ create_fd_symlink() {
 source_bashrc() {
     if [ -f "$HOME/.bashrc" ]; then
         log_info "Re-sourcing ~/.bashrc..."
+        # shellcheck source=/dev/null
         . "$HOME/.bashrc"
     fi
 }

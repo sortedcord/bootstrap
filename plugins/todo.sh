@@ -98,7 +98,7 @@ main() {
             log_success "Removed task #$task_num."
             ;;
         clear)
-            > "$TODO_FILE"
+            true > "$TODO_FILE"
             log_success "Cleared all tasks from your todo list."
             ;;
         --help|-h)
